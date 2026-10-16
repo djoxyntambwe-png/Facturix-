@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10243e">
+<title>FACTURIX — Facturation professionnelle</title>
+<style>
+:root{--primary:#123b70;--dark:#10243e;--light:#f3f6fb;--border:#dce3ed;--text:#253449;--muted:#6b7a90;--green:#16865b;--red:#bd3542}
+*{box-sizing:border-box}body{margin:0;background:var(--light);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:var(--dark);color:#fff;padding:20px 16px}.header-inner,main{max-width:1050px;margin:auto}.brand{font-size:26px;font-weight:800;letter-spacing:1px}.brand span{color:#67b7ff}header p{color:#c4d3e5;margin:5px 0 0;font-size:14px}
+main{padding:0 14px;margin:20px auto}.card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:19px;margin-bottom:17px;box-shadow:0 4px 15px #10243e0a}
+h2{margin-top:0;color:var(--dark);font-size:19px}h3{color:var(--dark);font-size:15px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field{margin-bottom:13px}
+label{display:block;font-size:13px;font-weight:650;margin-bottom:6px}input,select,textarea{width:100%;min-width:0;padding:12px;border:1px solid var(--border);border-radius:8px;background:white;color:var(--text);font:inherit;font-size:14px}textarea{resize:vertical;min-height:75px}
+button{cursor:pointer}.btn{padding:11px 14px;border-radius:9px;border:0;font-size:14px;font-weight:650}.primary{background:var(--primary);color:#fff}.secondary{background:#e9f1fc;color:var(--primary)}.success{background:var(--green);color:#fff}.danger{background:#fff0f1;color:var(--red)}.actions{display:flex;flex-wrap:wrap;gap:9px}.nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:17px}.nav button{background:white;color:var(--dark);border:1px solid var(--border);border-radius:9px;padding:11px 13px;font-weight:650}.nav button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.note{font-size:12px;color:var(--muted);line-height:1.55}.status{font-size:13px;margin-top:10px}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.catalog-list{display:flex;flex-direction:column;gap:10px;margin-top:15px}
+.catalog-item{display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--light);border:1px solid var(--border);border-radius:8px;gap:10px}
+footer{text-align:center;padding:18px;color:var(--muted);font-size:12px}
+@media(max-width:540px){.grid{grid-template-columns:1fr;gap:0}}
+</style>
+<!-- SDK Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<header><div class="header-inner"><div class="brand">FACTURI<span>X</span></div><p>La facturation simplifiée pour les entrepreneurs.</p></div></header>
+<main>
+  <!-- SECTION AUTHENTIFICATION -->
+  <section id="authView" class="card">
+    <h2 id="authTitle">Bienvenue sur FACTURIX</h2>
+    <p class="note">Connecte-toi ou crée ton compte pour accéder à ton espace de facturation en ligne.</p>
+    <form id="authForm">
+      <div class="field"><label for="authEmail">Adresse e-mail</label><input id="authEmail" type="email" required autocomplete="username" placeholder="toi@exemple.com"></div>
+      <div class="field"><label for="authPassword">Mot de passe</label><input id="authPassword" type="password" required minlength="8" autocomplete="current-password" placeholder="8 caractères minimum"></div>
+      <div id="authNameField" class="field" hidden><label for="authName">Nom complet</label><input id="authName" maxlength="120" autocomplete="name" placeholder="Ton nom complet"></div>
+      <div class="actions">
+        <button class="btn primary" id="authSubmit" type="submit">Se connecter</button>
+        <button class="btn secondary" id="switchAuth" type="button">Créer un compte</button>
+      </div>
+      <p id="authMessage" class="status" role="status"></p>
+    </form>
+  </section>
+
+  <!-- APPLICATION PRINCIPALE -->
+  <div id="appView" hidden>
+    <div class="topline card">
+      <div><strong id="welcome"></strong><p class="note" style="margin-bottom:0">Ton espace FACTURIX</p></div>
+      <button class="btn danger" id="logoutBtn">Déconnexion</button>
+    </div>
+    <nav class="nav">
+      <button data-page="entreprise">Mon entreprise</button>
+      <button class="active" data-page="catalogue">Catalogue</button>
+      <button data-page="facture">Nouvelle facture</button>
+      <button data-page="historique">Mes factures</button>
+    </nav>
+
+    <!-- PAGE ENTREPRISE -->
+    <section class="card" id="page-entreprise" hidden>
+      <h2>🏢 Mon entreprise</h2>
+      <form id="companyForm">
+        <div class="grid">
+          <div class="field"><label for="coName">Nom commercial *</label><input id="coName" required maxlength="100" placeholder="Ex. TAMZORYA"></div>
+          <div class="field"><label for="coLegal">Raison sociale</label><input id="coLegal" maxlength="150"></div>
+          <div class="field"><label for="coPhone">Téléphone *</label><input id="coPhone" required maxlength="40" placeholder="+243..."></div>
+          <div class="field"><label for="coEmail">E-mail</label><input id="coEmail" type="email" maxlength="120"></div>
+          <div class="field"><label for="coAddress">Adresse</label><input id="coAddress" maxlength="180"></div>
+          <div class="field"><label for="coCity">Ville</label><input id="coCity" maxlength="80" value="Kinshasa"></div>
+          <div class="field"><label for="coCountry">Pays</label><input id="coCountry" maxlength="80" value="République démocratique du Congo"></div>
+          <div class="field"><label for="coTax">Numéro fiscal</label><input id="coTax" maxlength="100"></div>
+          <div class="field"><label for="coRegister">Numéro de registre</label><input id="coRegister" maxlength="100"></div>
+          <div class="field"><label for="coCurrency">Devise</label><select id="coCurrency"><option value="CDF">CDF — Franc congolais</option><option value="USD">USD — Dollar américain</option></select></div>
+          <div class="field"><label for="coTerms">Conditions</label><input id="coTerms" maxlength="180" value="Paiement à réception"></div>
+        </div>
+        <div class="field"><label for="coMessage">Message de fin</label><textarea id="coMessage" maxlength="300">Merci pour votre confiance !</textarea></div>
+        <button class="btn primary" type="submit">Enregistrer l'entreprise</button>
+        <p id="companyStatus" class="status"></p>
+      </form>
+    </section>
+    
+    <!-- PAGE CATALOGUE -->
+    <section class="card" id="page-catalogue">
+      <h2>📦 Catalogue de produits et services</h2>
+      <p class="note">Ajoute tes articles ou prestations récurrentes pour les retrouver facilement.</p>
+      <form id="productForm">
+        <div class="grid">
+          <div class="field"><label for="prodName">Nom de l'article *</label><input id="prodName" required maxlength="120" placeholder="Ex. Développement Web / Colis 1kg"></div>
+          <div class="field"><label for="prodPrice">Prix unitaire *</label><input id="prodPrice" type="number" step="0.01" min="0" required placeholder="Ex. 50"></div>
+          <div class="field"><label for="prodUnit">Unité</label><input id="prodUnit" maxlength="40" value="unité" placeholder="Ex. heure, forfait, pièce"></div>
+          <div class="field"><label for="prodDesc">Description</label><input id="prodDesc" maxlength="200" placeholder="Courte description (optionnel)"></div>
+        </div>
+        <button class="btn primary" type="submit">Ajouter au catalogue</button>
+        <p id="productStatus" class="status"></p>
+      </form>
+      
+      <div style="margin-top:25px">
+        <h3>Mes articles enregistrés</h3>
+        <div id="catalogList" class="catalog-list"><p class="note">Chargement de ton catalogue...</p></div>
+      </div>
+    </section>
+
+    <section class="card" id="page-facture" hidden>
+      <h2>🧾 Créer une facture</h2>
+    </section>
+    
+    <section class="card" id="page-historique" hidden>
+      <h2>📋 Mes factures</h2>
+    </section>
+  </div>
+</main>
+<footer>FACTURIX · Une solution pour les entrepreneurs.</footer>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+
+const SUPABASE_URL = 'https://gravdcorborgssicqkso.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_vIZcbN1B5TA-vUqiC8Af0g_8a3bl5CE';
+
+const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let currentUser = null;
+let authMode = 'login';
+
+function showAuth(mode){
+  authMode = mode;
+  const signup = mode === 'signup';
+  $('authTitle').textContent = signup ? 'Créer mon compte FACTURIX' : 'Bienvenue sur FACTURIX';
+  $('authSubmit').textContent = signup ? 'Créer mon compte' : 'Se connecter';
+  $('switchAuth').textContent = signup ? 'J’ai déjà un compte' : 'Créer un compte';
+  $('authNameField').hidden = !signup;
+  $('authName').required = signup;
+  $('authMessage').textContent = '';
+}
+$('switchAuth').addEventListener('click', () => showAuth(authMode === 'login' ? 'signup' : 'login'));
+
+$('authForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = $('authEmail').value.trim();
+  const password = $('authPassword').value;
+  $('authMessage').textContent = 'Traitement en cours...';
+
+  try {
+    if (authMode === 'signup') {
+      const fullName = $('authName').value.trim();
+      if (!fullName) { $('authMessage').textContent = 'Entre ton nom complet.'; return; }
+
+      const { data, error } = await _supabase.auth.signUp({
+        email, password,
+        options: { data: { full_name: fullName } }
+      });
+      if (error) throw error;
+
+      if (data.user) {
+        await _supabase.from('profiles').insert([{ id: data.user.id, full_name: fullName }]);
+      }
+
+      $('authMessage').textContent = 'Compte créé avec succès ! Connecte-toi.';
+      showAuth('login');
+    } else {
+      const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+
+      currentUser = data.user;
+      openApp();
+    }
+  } catch (err) {
+    $('authMessage').textContent = err.message || 'Une erreur est survenue.';
+  }
+});
+
+$('logoutBtn').addEventListener('click', async () => {
+  await _supabase.auth.signOut();
+  currentUser = null;
+  $('appView').hidden = true;
+  $('authView').hidden = false;
+  $('authPassword').value = '';
+  showAuth('login');
+});
+
+async function checkSession() {
+  const { data: { session } } = await _supabase.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    openApp();
+  } else {
+    $('authView').hidden = false;
+    $('appView').hidden = true;
+  }
+}
+
+async function openApp() {
+  $('authView').hidden = true;
+  $('appView').hidden = false;
+  const name = currentUser.user_metadata?.full_name || currentUser.email;
+  $('welcome').textContent = 'Bonjour, ' + name;
+  await loadCompanyData();
+  await loadCatalog();
+}
+
+// Gestion de l'entreprise
+const companyFields = {coName:'name', coLegal:'legal', coPhone:'phone', coEmail:'email', coAddress:'address', coCity:'city', coCountry:'country', coTax:'tax', coRegister:'register', coCurrency:'currency', coTerms:'terms', coMessage:'message'};
+
+async function loadCompanyData() {
+  try {
+    const { data } = await _supabase.from('companies').select('*').eq('id', currentUser.id).single();
+    if (data) {
+      Object.entries(companyFields).forEach(([id, key]) => {
+        if (data[key] !== undefined && data[key] !== null) $(id).value = data[key];
+      });
+    }
+  } catch (err) {}
+}
+
+$('companyForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const payload = { id: currentUser.id };
+  Object.entries(companyFields).forEach(([id, key]) => {
+    payload[key] = $(id).value.trim();
+  });
+  $('companyStatus').textContent = 'Enregistrement...';
+  try {
+    const { error } = await _supabase.from('companies').upsert(payload);
+    if (error) throw error;
+    $('companyStatus').textContent = 'Entreprise enregistrée avec succès !';
+  } catch (err) {
+    $('companyStatus').textContent = 'Erreur : ' + err.message;
+  }
+});
+
+// Gestion du catalogue
+async function loadCatalog() {
+  const listEl = $('catalogList');
+  listEl.innerHTML = '<p class="note">Chargement...</p>';
+  try {
+    const { data, error } = await _supabase.from('catalog').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      listEl.innerHTML = '<p class="note">Aucun article dans ton catalogue pour l’instant.</p>';
+      return;
+    }
+
+    listEl.innerHTML = '';
+    data.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'catalog-item';
+      div.innerHTML = `
+        <div>
+          <strong>${escapeHtml(item.name)}</strong>
+          <p class="note" style="margin:2px 0 0">${escapeHtml(item.description || '')} — <b>${item.price}</b> / ${escapeHtml(item.unit)}</p>
+        </div>
+        <button class="btn danger" style="padding:6px 10px;font-size:12px" data-id="${item.id}">Supprimer</button>
+      `;
+      div.querySelector('button').addEventListener('click', () => deleteProduct(item.id));
+      listEl.appendChild(div);
+    });
+  } catch (err) {
+    listEl.innerHTML = '<p class="note" style="color:var(--red)">Erreur de chargement du catalogue.</p>';
+  }
+}
+
+$('productForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const name = $('prodName').value.trim();
+  const price = parseFloat($('prodPrice').value);
+  const unit = $('prodUnit').value.trim() || 'unité';
+  const description = $('prodDesc').value.trim();
+
+  $('productStatus').textContent = 'Ajout en cours...';
+  try {
+    const { error } = await _supabase.from('catalog').insert([{ user_id: currentUser.id, name, price, unit, description }]);
+    if (error) throw error;
+
+    $('productStatus').textContent = 'Article ajouté avec succès !';
+    $('productForm').reset();$('prodUnit').value = 'unité';
+    await loadCatalog();
+  } catch (err) {
+    $('productStatus').textContent = 'Erreur : ' + err.message;
+  }
+});
+
+async function deleteProduct(id) {
+  if (!confirm('Voulez-vous vraiment supprimer cet article ?')) return;
+  try {
+    const { error } = await _supabase.from('catalog').delete().eq('id', id);
+    if (error) throw error;
+    await loadCatalog();
+  } catch (err) {
+    alert('Erreur lors de la suppression.');
+  }
+}
+
+function escapeHtml(str) {
+  return str.replace(/[&<>'"]/g, 
+    tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+  );
+}
+
+// Navigation
+document.querySelectorAll('.nav button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.nav button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    const target = b.dataset.page;
+    ['entreprise', 'catalogue', 'facture', 'historique'].forEach(p => {
+      $('page-' + p).hidden = (p !== target);
+    });
+  });
+});
+
+checkSession();
+})();
+</script>
+</body>
+</html>
