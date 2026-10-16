@@ -11,11 +11,12 @@
 header{background:var(--dark);color:#fff;padding:20px 16px}.header-inner,main{max-width:1050px;margin:auto}.brand{font-size:26px;font-weight:800;letter-spacing:1px}.brand span{color:#67b7ff}header p{color:#c4d3e5;margin:5px 0 0;font-size:14px}
 main{padding:0 14px;margin:20px auto}.card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:19px;margin-bottom:17px;box-shadow:0 4px 15px #10243e0a}
 h2{margin-top:0;color:var(--dark);font-size:19px}h3{color:var(--dark);font-size:15px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field{margin-bottom:13px}
-label{display:block;font-size:13px;font-weight:650;margin-bottom:6px}input,select,textarea{width:100%;min-width:0;padding:12px;border:1px solid var(--border);border-radius:8px;background:white;color:var(--text);font:inherit;font-size:14px}
+label{display:block;font-size:13px;font-weight:650;margin-bottom:6px}input,select,textarea{width:100%;min-width:0;padding:12px;border:1px solid var(--border);border-radius:8px;background:white;color:var(--text);font:inherit;font-size:14px}textarea{resize:vertical;min-height:75px}
 button{cursor:pointer}.btn{padding:11px 14px;border-radius:9px;border:0;font-size:14px;font-weight:650}.primary{background:var(--primary);color:#fff}.secondary{background:#e9f1fc;color:var(--primary)}.success{background:var(--green);color:#fff}.danger{background:#fff0f1;color:var(--red)}.actions{display:flex;flex-wrap:wrap;gap:9px}.nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:17px}.nav button{background:white;color:var(--dark);border:1px solid var(--border);border-radius:9px;padding:11px 13px;font-weight:650}.nav button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
 .note{font-size:12px;color:var(--muted);line-height:1.55}.status{font-size:13px;margin-top:10px}
 .topline{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 footer{text-align:center;padding:18px;color:var(--muted);font-size:12px}
+@media(max-width:540px){.grid{grid-template-columns:1fr;gap:0}}
 </style>
 <!-- SDK Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -46,15 +47,34 @@ footer{text-align:center;padding:18px;color:var(--muted);font-size:12px}
       <button class="btn danger" id="logoutBtn">Déconnexion</button>
     </div>
     <nav class="nav">
-      <button class="active" data-page="facture">Nouvelle facture</button>
-      <button data-page="entreprise">Mon entreprise</button>
+      <button class="active" data-page="entreprise">Mon entreprise</button>
+      <button data-page="facture">Nouvelle facture</button>
       <button data-page="catalogue">Catalogue</button>
       <button data-page="historique">Mes factures</button>
     </nav>
 
+    <!-- PAGE ENTREPRISE -->
     <section class="card" id="page-entreprise">
       <h2>🏢 Mon entreprise</h2>
-      <p class="note">Ici s'afficheront les informations de ton entreprise enregistrées dans Supabase.</p>
+      <p class="note">Enregistre ces informations une seule fois : elles seront sauvegardées dans ton compte Supabase.</p>
+      <form id="companyForm">
+        <div class="grid">
+          <div class="field"><label for="coName">Nom commercial *</label><input id="coName" required maxlength="100" placeholder="Ex. TAMZORYA"></div>
+          <div class="field"><label for="coLegal">Raison sociale</label><input id="coLegal" maxlength="150" placeholder="Ex. SARL / EURL"></div>
+          <div class="field"><label for="coPhone">Téléphone *</label><input id="coPhone" required maxlength="40" placeholder="+243..."></div>
+          <div class="field"><label for="coEmail">E-mail</label><input id="coEmail" type="email" maxlength="120"></div>
+          <div class="field"><label for="coAddress">Adresse</label><input id="coAddress" maxlength="180"></div>
+          <div class="field"><label for="coCity">Ville</label><input id="coCity" maxlength="80" placeholder="Kinshasa"></div>
+          <div class="field"><label for="coCountry">Pays</label><input id="coCountry" maxlength="80" value="République démocratique du Congo"></div>
+          <div class="field"><label for="coTax">Numéro fiscal</label><input id="coTax" maxlength="100"></div>
+          <div class="field"><label for="coRegister">Numéro de registre</label><input id="coRegister" maxlength="100"></div>
+          <div class="field"><label for="coCurrency">Devise par défaut</label><select id="coCurrency"><option value="CDF">CDF — Franc congolais</option><option value="USD">USD — Dollar américain</option></select></div>
+          <div class="field"><label for="coTerms">Conditions de paiement</label><input id="coTerms" maxlength="180" value="Paiement à la réception de la facture"></div>
+        </div>
+        <div class="field"><label for="coMessage">Message de fin de facture</label><textarea id="coMessage" maxlength="300">Merci pour votre confiance !</textarea></div>
+        <button class="btn primary" type="submit">Enregistrer mon entreprise</button>
+        <p id="companyStatus" class="status"></p>
+      </form>
     </section>
     
     <section class="card" id="page-facture" hidden>
@@ -77,7 +97,6 @@ footer{text-align:center;padding:18px;color:var(--muted);font-size:12px}
 'use strict';
 const $ = id => document.getElementById(id);
 
-// Paramètres Supabase configurés
 const SUPABASE_URL = 'https://gravdcorborgssicqkso.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_vIZcbN1B5TA-vUqiC8Af0g_8a3bl5CE';
 
@@ -97,7 +116,7 @@ function showAuth(mode){
 }
 $('switchAuth').addEventListener('click', () => showAuth(authMode === 'login' ? 'signup' : 'login'));
 
-// Inscription / Connexion en ligne avec Supabase Auth
+// Authentification
 $('authForm').addEventListener('submit', async e => {
   e.preventDefault();
   const email = $('authEmail').value.trim();
@@ -110,8 +129,7 @@ $('authForm').addEventListener('submit', async e => {
       if (!fullName) { $('authMessage').textContent = 'Entre ton nom complet.'; return; }
 
       const { data, error } = await _supabase.auth.signUp({
-        email,
-        password,
+        email, password,
         options: { data: { full_name: fullName } }
       });
       if (error) throw error;
@@ -134,7 +152,6 @@ $('authForm').addEventListener('submit', async e => {
   }
 });
 
-// Déconnexion
 $('logoutBtn').addEventListener('click', async () => {
   await _supabase.auth.signOut();
   currentUser = null;
@@ -155,13 +172,53 @@ async function checkSession() {
   }
 }
 
-function openApp() {
+async function openApp() {
   $('authView').hidden = true;
   $('appView').hidden = false;
   const name = currentUser.user_metadata?.full_name || currentUser.email;
   $('welcome').textContent = 'Bonjour, ' + name;
+  await loadCompanyData();
 }
 
+// Gestion de l'entreprise
+const companyFields = {coName:'name', coLegal:'legal', coPhone:'phone', coEmail:'email', coAddress:'address', coCity:'city', coCountry:'country', coTax:'tax', coRegister:'register', coCurrency:'currency', coTerms:'terms', coMessage:'message'};
+
+async function loadCompanyData() {
+  try {
+    const { data, error } = await _supabase.from('companies').select('*').eq('id', currentUser.id).single();
+    if (data) {
+      Object.entries(companyFields).forEach(([id, key]) => {
+        if (data[key] !== undefined && data[key] !== null) $(id).value = data[key];
+      });
+    }
+  } catch (err) {
+    console.log('Aucune entreprise enregistrée pour le moment.');
+  }
+}
+
+$('companyForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const payload = { id: currentUser.id };
+  Object.entries(companyFields).forEach(([id, key]) => {
+    payload[key] = $(id).value.trim();
+  });
+
+  if (!payload.name || !payload.phone) {
+    $('companyStatus').textContent = 'Le nom commercial et le téléphone sont obligatoires.';
+    return;
+  }
+
+  $('companyStatus').textContent = 'Enregistrement en cours...';
+  try {
+    const { error } = await _supabase.from('companies').upsert(payload);
+    if (error) throw error;
+    $('companyStatus').textContent = 'Entreprise enregistrée avec succès dans Supabase !';
+  } catch (err) {
+    $('companyStatus').textContent = 'Erreur : ' + (err.message || 'Impossible d’enregistrer.');
+  }
+});
+
+// Navigation
 document.querySelectorAll('.nav button').forEach(b => {
   b.addEventListener('click', () => {
     document.querySelectorAll('.nav button').forEach(x => x.classList.remove('active'));
@@ -178,3 +235,4 @@ checkSession();
 </script>
 </body>
 </html>
+
