@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10243e">
+<title>FACTURIX — Facturation professionnelle</title>
+<style>
+:root{--primary:#123b70;--dark:#10243e;--light:#f3f6fb;--border:#dce3ed;--text:#253449;--muted:#6b7a90;--green:#16865b;--red:#bd3542}
+*{box-sizing:border-box}body{margin:0;background:var(--light);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+[hidden]{display:none !important}
+header{background:var(--dark);color:#fff;padding:20px 16px}.header-inner,main{max-width:1050px;margin:auto}.brand{font-size:26px;font-weight:800;letter-spacing:1px}.brand span{color:#67b7ff}header p{color:#c4d3e5;margin:5px 0 0;font-size:14px}
+main{padding:0 14px;margin:20px auto}.card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:19px;margin-bottom:17px;box-shadow:0 4px 15px #10243e0a}
+h2{margin-top:0;color:var(--dark);font-size:19px}h3{color:var(--dark);font-size:15px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field{margin-bottom:13px}
+label{display:block;font-size:13px;font-weight:650;margin-bottom:6px}input,select,textarea{width:100%;min-width:0;padding:12px;border:1px solid var(--border);border-radius:8px;background:white;color:var(--text);font:inherit;font-size:16px}textarea{resize:vertical;min-height:75px}
+button{cursor:pointer}.btn{padding:11px 14px;border-radius:9px;border:0;font-size:14px;font-weight:650}.btn:disabled{opacity:.6;cursor:wait}.primary{background:var(--primary);color:#fff}.secondary{background:#e9f1fc;color:var(--primary)}.success{background:var(--green);color:#fff}.danger{background:#fff0f1;color:var(--red)}.actions{display:flex;flex-wrap:wrap;gap:9px}.nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:17px}.nav button{background:white;color:var(--dark);border:1px solid var(--border);border-radius:9px;padding:11px 13px;font-weight:650}.nav button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.note{font-size:12px;color:var(--muted);line-height:1.55}.status{font-size:13px;margin-top:10px}.status.err{color:var(--red)}.status.ok{color:var(--green)}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.catalog-list{display:flex;flex-direction:column;gap:10px;margin-top:15px}
+.catalog-item{display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--light);border:1px solid var(--border);border-radius:8px;gap:10px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin:15px 0}th,td{border:1px solid var(--border);padding:10px;text-align:left;font-size:14px}th{background:var(--light)}
+td input{padding:8px}
+footer{text-align:center;padding:18px;color:var(--muted);font-size:12px}
+@media print {
+  body * { visibility: hidden; }
+  #printArea, #printArea * { visibility: visible; }
+  #printArea { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; margin: 0; border: 0 !important; }
+  .no-print { display: none !important; }
+}
+@media(max-width:540px){.grid{grid-template-columns:1fr;gap:0}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<header class="no-print"><div class="header-inner"><div class="brand">FACTURI<span>X</span></div><p>La facturation simplifiée pour les entrepreneurs.</p></div></header>
+<main>
+  <!-- AUTHENTIFICATION -->
+  <section id="authView" class="card no-print">
+    <h2 id="authTitle">Bienvenue sur FACTURIX</h2>
+    <p class="note">Connecte-toi ou crée ton compte pour accéder à ton espace de facturation en ligne.</p>
+    <form id="authForm">
+      <div id="authNameField" class="field" hidden><label for="authName">Nom complet</label><input id="authName" maxlength="120" autocomplete="name" placeholder="Ton nom complet"></div>
+      <div class="field"><label for="authEmail">Adresse e-mail</label><input id="authEmail" type="email" required autocomplete="username" placeholder="toi@exemple.com"></div>
+      <div class="field"><label for="authPassword">Mot de passe</label><input id="authPassword" type="password" required minlength="8" autocomplete="current-password" placeholder="8 caractères minimum"></div>
+      <div class="actions">
+        <button class="btn primary" id="authSubmit" type="submit">Se connecter</button>
+        <button class="btn secondary" id="switchAuth" type="button">Créer un compte</button>
+      </div>
+      <p id="authMessage" class="status" role="status"></p>
+    </form>
+  </section>
+
+  <!-- APPLICATION PRINCIPALE -->
+  <div id="appView" hidden>
+    <div class="topline card no-print">
+      <div><strong id="welcome"></strong><p class="note" style="margin-bottom:0">Ton espace FACTURIX</p></div>
+      <button class="btn danger" id="logoutBtn" type="button">Déconnexion</button>
+    </div>
+        <nav class="nav no-print">
+      <button type="button" class="active" data-page="facture">Nouvelle facture</button>
+      <button type="button" data-page="dashboard">📊 Tableau de bord</button> <!-- Ajouté ici ! -->
+      <button type="button" data-page="entreprise">Mon entreprise</button>
+      <button type="button" data-page="catalogue">Catalogue</button>
+      <button type="button" data-page="historique">Mes factures</button>
+      <button type="button" data-page="politique">Politique & Mentions</button>
+    </nav>
+
+
+    <!-- ENTREPRISE -->
+    <section class="card no-print" id="page-entreprise" hidden>
+      <h2>🏢 Mon entreprise</h2>
+      <form id="companyForm">
+        <div class="grid">
+          <div class="field"><label for="coName">Nom commercial *</label><input id="coName" required maxlength="100" placeholder="Ex. TAMZORYA"></div>
+          <div class="field"><label for="coPhone">Téléphone *</label><input id="coPhone" required maxlength="40" placeholder="+243..."></div>
+          <div class="field"><label for="coEmail">E-mail</label><input id="coEmail" type="email" maxlength="120"></div>
+          <div class="field"><label for="coAddress">Adresse</label><input id="coAddress" maxlength="180"></div>
+          <div class="field"><label for="coCity">Ville</label><input id="coCity" maxlength="80" value="Kinshasa"></div>
+          <div class="field"><label for="coCurrency">Devise</label><select id="coCurrency"><option value="CDF">CDF — Franc congolais</option><option value="USD">USD — Dollar américain</option></select></div>
+          <div class="field">
+  <label for="logoUpload">Logo de l'entreprise (PNG, JPG)</label>
+  <input type="file" id="logoUpload" accept="image/*"></div>
+          <div class="field"><label for="coRate">Taux de change (1 USD = X CDF) *</label><input id="coRate" type="number" value="2850" required></div>
+
+        </div>
+        <div class="field"><label for="coMessage">Message de fin</label><textarea id="coMessage" maxlength="300">Merci pour votre confiance !</textarea></div>
+        <button class="btn primary" type="submit">Enregistrer l'entreprise</button>
+        <p id="companyStatus" class="status"></p>
+      </form>
+    </section>
+
+    <!-- CATALOGUE -->
+    <section class="card no-print" id="page-catalogue" hidden>
+      <h2>📦 Catalogue de produits et services</h2>
+      <form id="productForm">
+        <div class="grid">
+          <div class="field"><label for="prodName">Nom de l'article *</label><input id="prodName" required maxlength="120"></div>
+          <div class="field"><label for="prodPrice">Prix unitaire *</label><input id="prodPrice" type="number" step="0.01" min="0" required inputmode="decimal"></div>
+          <div class="field"><label for="prodUnit">Unité</label><input id="prodUnit" maxlength="40" value="unité"></div>
+          <div class="field"><label for="prodDesc">Description</label><input id="prodDesc" maxlength="200"></div>
+        </div>
+        <button class="btn primary" type="submit">Ajouter au catalogue</button>
+        <p id="productStatus" class="status"></p>
+      </form>
+      <div style="margin-top:20px"><div id="catalogList" class="catalog-list"></div></div>
+    </section>
+
+    <!-- NOUVELLE FACTURE -->
+    <section class="card" id="page-facture">
+      <div class="no-print">
+        <h2>🧾 Créer une facture</h2>
+        <form id="invoiceForm">
+          <div class="grid">
+            <div class="field"><label for="invNumber">Numéro de facture *</label><input id="invNumber" required placeholder="FAC-2026-001"></div>
+            <div class="field"><label for="clientName">Nom du client *</label><input id="clientName" required placeholder="Nom du client / Entreprise"></div>
+            <div class="field"><label for="clientPhone">Téléphone client</label><input id="clientPhone" placeholder="+243..."></div>
+            <div class="field"><label for="clientEmail">E-mail client</label><input id="clientEmail" type="email"></div>
+          </div>
+
+          <h3>Articles de la facture</h3>
+          <div class="actions" style="margin-bottom:12px">
+            <select id="catalogSelect" style="flex:1"><option value="">-- Ajouter depuis le catalogue --</option></select>
+            <button class="btn secondary" type="button" id="addCatalogBtn">Ajouter</button>
+            <button class="btn secondary" type="button" id="addCustomBtn">+ Ligne vierge</button>
+          </div>
+
+          <div class="table-wrap">
+          <table>
+            <thead><tr><th style="min-width:160px">Description</th><th style="width:90px">Qté</th><th style="width:120px">Prix unitaire</th><th style="width:110px">Total</th><th style="width:60px"></th></tr></thead>
+            <tbody id="invoiceItemsTable"></tbody>
+          </table>
+          </div>
+
+          <div style="text-align:right;margin:15px 0;font-size:18px">
+            <strong>Total : <span id="invoiceGrandTotal">0,00</span> <span class="currSymbol">CDF</span></strong>
+          </div>
+
+          <div class="actions">
+            <button class="btn success" id="saveInvoiceBtn" type="submit">Enregistrer la facture</button>
+            <button class="btn primary" type="button" id="printInvoiceBtn" hidden>Imprimer / Exporter PDF</button>
+            <button class="btn secondary" type="button" id="newInvoiceBtn" hidden>Nouvelle facture</button>
+          </div>
+          <p id="invoiceStatus" class="status"></p>
+        </form>
+      </div>
+
+      <!-- APERÇU / ZONE D'IMPRESSION -->
+      <div id="printArea" hidden style="margin-top:20px;border-top:2px dashed var(--border);padding-top:20px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+  <div>
+    <!-- 1. Le Logo est placé ici, juste au-dessus du nom de la boutique -->
+    <img id="pCoLogo" src="" alt="Logo" style="max-height: 60px; max-width: 150px; display: none; margin-bottom: 10px;">
+    
+    <h1 id="pCoName" style="margin:0;color:var(--dark)"></h1>
+    <p id="pCoDetails" class="note" style="margin:5px 0"></p>
+  </div>
+  <div style="text-align:right">
+    <h2 style="margin:0;color:var(--primary)">FACTURE</h2>
+    <strong id="pInvNumber"></strong><br>
+    <span id="pInvDate" class="note"></span>
+  </div>
+</div>
+
+        <hr style="margin:20px 0;border:0;border-top:1px solid var(--border)">
+        <div>
+          <h3>Facturé à :</h3>
+          <strong id="pClientName"></strong><br>
+          <span id="pClientDetails" class="note"></span>
+        </div>
+        <table style="margin-top:20px">
+          <thead><tr><th>Description</th><th>Qté</th><th>Prix unitaire</th><th>Total</th></tr></thead>
+          <tbody id="pItemsTable"></tbody>
+        </table>
+        <div style="text-align:right;font-size:20px;margin-top:15px">
+          <strong>TOTAL : <span id="pGrandTotal"></span> <span class="pCurr">CDF</span></strong>
+        </div>
+        <div id="pAlternativeTotal" class="note" style="text-align:right; margin-top:5px; font-weight:600;"></div>
+        
+        <p id="pCoMessage" class="note" style="margin-top:30px;text-align:center;font-style:italic"></p>
+      </div>
+    </section>
+
+    <!-- HISTORIQUE -->
+    <section class="card no-print" id="page-historique" hidden>
+      <h2>📋 Mes factures</h2>
+      <div id="historyList"><p class="note">Chargement de ton historique...</p></div>
+    </section>
+
+    <!-- TABLEAU DE BORD -->
+    <section class="card no-print" id="page-dashboard" hidden>
+      <h2>📊 Résumé de vos ventes</h2>
+      <div class="grid">
+        <div class="card" style="background: #e9f1fc; text-align: center; border-left: 5px solid var(--primary); margin-bottom: 0;">
+          <h3 style="margin: 0; color: var(--primary); font-size: 14px;">Total Ventes (CDF)</h3>
+          <p id="dashTotalCDF" style="font-size: 22px; font-weight: 800; margin: 8px 0 0; color: var(--dark);">0,00 CDF</p>
+        </div>
+        <div class="card" style="background: #eafaf1; text-align: center; border-left: 5px solid var(--green); margin-bottom: 0;">
+          <h3 style="margin: 0; color: var(--green); font-size: 14px;">Total Ventes (USD)</h3>
+          <p id="dashTotalUSD" style="font-size: 22px; font-weight: 800; margin: 8px 0 0; color: var(--dark);">0,00 USD</p>
+        </div>
+      </div>
+      <p class="note" style="margin-top: 15px; text-align: center; font-weight: 650;" id="dashCount">0 achat(s) enregistré(s) au total.</p>
+    </section>
+
+    
+    <!-- ONGLET À PROPOS & POLITIQUE -->
+<section class="card no-print" id="page-politique" hidden>
+  <!-- SECTION CRÉATEUR -->
+  <div style="background: var(--light); border: 1px solid var(--border); border-radius: 10px; padding: 15px; margin-bottom: 20px; text-align: center;">
+    <h3 style="margin-top: 0; font-size: 18px; color: var(--primary);">🚀 À propos du créateur</h3>
+    <p style="margin: 5px 0 15px; font-weight: 650; font-size: 16px;">Développé par Djoxy Ntambwe</p>
+    <p class="note" style="margin-bottom: 15px;">Une solution conçue pour digitaliser et simplifier la gestion des entrepreneurs en RD Congo.</p>
+    
+    <div class="actions" style="justify-content: center; gap: 10px;">
+      <!-- Bouton WhatsApp -->
+      <a href="https://wa.me/message/KQLKOI6IDLTMF1" target="_blank" rel="noopener noreferrer" class="btn success" style="text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+        💬 WhatsApp
+      </a>
+      <!-- Bouton LinkedIn -->
+      <a href="https://www.linkedin.com/in/djoxy-ntambwe-852554422?utm_source=share_via&utm_content=profile&utm_medium=member_ios" target="_blank" rel="noopener noreferrer" class="btn primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+        💼 LinkedIn
+      </a>
+      <!-- Bouton Facebook -->
+      <a href="https://www.facebook.com/share/1ZsXqc4RdG/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" class="btn secondary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border);">
+        🔵 Facebook
+      </a>
+    </div>
+  </div>
+
+  <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
+
+  <!-- SECTION POLITIQUE DE CONFIDENTIALITÉ -->
+  <h2>⚖️ Politique de Confidentialité & Mentions Légales</h2>
+  <p class="note"><strong>Dernière mise à jour : Octobre 2026</strong></p>
+  
+  <h3>1. Sécurité et Confidentialité des données</h3>
+  <p class="note">Toutes vos données (profil, catalogue, factures) sont stockées de manière sécurisée via <strong>Supabase</strong>. Grâce au protocole de sécurité stricte au niveau de la base de donnée, vos données sont totalement isolées : vous êtes le seul et unique gestionnaire de vos informations.</p>
+
+  <h3>2. Stockage local (Brouillons)</h3>
+  <p class="note">Pour faire face aux instabilités de connexion internet, FACTURIX utilise le stockage local de votre navigateur (localStorage). Cela permet de sauvegarder automatiquement votre facture en cours afin que vous ne perdiez rien, même en cas de coupure de réseau.</p>
+
+  <h3>3. Responsabilité fiscale</h3>
+  <p class="note">FACTURIX est un outil d'aide à la gestion pour les entrepreneurs et micro-entreprises. L'exactitude des informations saisies, de la numérotation des factures et des calculs relève de la responsabilité exclusive de l'utilisateur.</p>
+</section>
+  </div>
+</main>
+<footer class="no-print">FACTURIX · Une solution pour les entrepreneurs.</footer>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const fmt = n => (Number(n) || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const setStatus = (id, msg, type) => { const el = $(id); el.textContent = msg; el.className = 'status' + (type ? ' ' + type : ''); };
+
+const SUPABASE_URL = 'https://gravdcorborgssicqkso.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_vIZcbN1B5TA-vUqiC8Af0g_8a3bl5CE';
+const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentUser = null;
+let companyData = null;
+let catalogItems = [];
+let isSignup = false;
+
+function saveDraft() {
+  const draft = {
+    number: $('invNumber').value,
+    clientName: $('clientName').value,
+    clientPhone: $('clientPhone').value,
+    clientEmail: $('clientEmail').value,
+    rows: readRows()
+  };
+  localStorage.setItem('facturix_draft', JSON.stringify(draft));
+}
+
+// Déclenche la sauvegarde automatique dès qu'on tape dans les infos client
+['invNumber', 'clientName', 'clientPhone', 'clientEmail'].forEach(id => {
+  $(id).addEventListener('input', saveDraft);
+});
+
+
+const currency = () => companyData?.currency || 'CDF';
+function applyCurrency() {
+  document.querySelectorAll('.currSymbol').forEach(el => el.textContent = currency());
+}
+
+/* ---------- AUTH ---------- */
+function setAuthMode(signup) {
+  isSignup = signup;
+  $('authNameField').hidden = !signup;
+  $('authTitle').textContent = signup ? 'Créer ton compte FACTURIX' : 'Bienvenue sur FACTURIX';
+  $('authSubmit').textContent = signup ? 'Créer mon compte' : 'Se connecter';
+  $('switchAuth').textContent = signup ? 'J\'ai déjà un compte' : 'Créer un compte';
+  $('authPassword').autocomplete = signup ? 'new-password' : 'current-password';
+  setStatus('authMessage', '');
+}
+$('switchAuth').addEventListener('click', () => setAuthMode(!isSignup));
+
+async function checkSession() {
+  try {
+    const { data: { session } } = await _supabase.auth.getSession();
+    if (session) { currentUser = session.user; await openApp(); }
+  } catch (err) { setStatus('authMessage', 'Erreur de connexion : ' + err.message, 'err'); }
+}
+
+async function openApp() {
+  $('authView').hidden = true;
+  $('appView').hidden = false;
+  $('welcome').textContent = 'Bonjour, ' + (currentUser.user_metadata?.full_name || currentUser.email);
+  await loadCompanyData();
+  await loadCatalog();
+  await resetInvoice();
+  setupRealtime(); // <-- Appel corrigé ici
+}
+
+// Nouvelle fonction à ajouter juste après openApp()
+let realtimeStarted = false;
+function setupRealtime() {
+  if (realtimeStarted) return;
+  realtimeStarted = true;
+  _supabase
+    .channel('invoices-updates')
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'invoices', filter: `user_id=eq.${currentUser.id}` },
+      (payload) => {
+        // Si l'utilisateur est actuellement sur l'onglet historique, on recharge proprement la liste
+        const activeNav = document.querySelector('.nav button.active');
+        if (activeNav && activeNav.dataset.page === 'historique') {
+          loadHistory();
+        }
+      }
+    )
+    .subscribe();
+}
+
+$('authForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = $('authEmail').value.trim();
+  const password = $('authPassword').value;
+  const btn = $('authSubmit');
+  btn.disabled = true;
+  try {
+    if (isSignup) {
+      setStatus('authMessage', 'Création du compte...');
+      const { data, error } = await _supabase.auth.signUp({
+        email, password, options: { data: { full_name: $('authName').value.trim() } }
+      });
+      if (error) throw error;
+      if (data.session) { currentUser = data.user; await openApp(); }
+      else {
+        setAuthMode(false);
+        setStatus('authMessage', 'Compte créé ! Vérifie ta boîte e-mail pour confirmer, puis connecte-toi.', 'ok');
+      }
+    } else {
+      setStatus('authMessage', 'Connexion en cours...');
+      const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      currentUser = data.user;
+      await openApp();
+    }
+  } catch (err) {
+    setStatus('authMessage', err.message, 'err');
+  } finally { btn.disabled = false; }
+});
+
+$('logoutBtn').addEventListener('click', async () => {
+  localStorage.removeItem('facturix_draft');
+  await _supabase.auth.signOut();
+  location.reload();
+});
+
+/* ---------- ENTREPRISE ---------- */
+const companyFields = { coName: 'name', coPhone: 'phone', coEmail: 'email', coAddress: 'address', coCity: 'city', coCurrency: 'currency', coMessage: 'message', coRate: 'exchange_rate', coLogo: 'logo_url' };
+
+async function loadCompanyData() {
+  try {
+    const { data, error } = await _supabase.from('companies').select('*').eq('id', currentUser.id).maybeSingle();
+    if (error) throw error;
+    if (data) {
+      companyData = data;
+      Object.entries(companyFields).forEach(([id, k]) => { 
+        // Condition ajoutée pour ignorer le champ logo lors du chargement textuel
+        if (id !== 'coLogo' && data[k] && $(id)) {
+          $(id).value = data[k]; 
+        }
+      });
+    }
+  } catch (err) { setStatus('companyStatus', 'Erreur de chargement : ' + err.message, 'err'); }
+  applyCurrency();
+}
+
+$('companyForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  setStatus('companyStatus', 'Enregistrement...');
+  const btn = e.target.querySelector('button[type="submit"]');
+  btn.disabled = true;
+
+  try {
+    const payload = { id: currentUser.id };
+    
+    // Modification ici : on ignore 'coLogo' dans cette boucle de texte
+    Object.entries(companyFields).forEach(([id, k]) => {
+      if (id !== 'coLogo' && $(id)) {
+        payload[k] = $(id).value.trim();
+      }
+    });
+
+    payload.exchange_rate = parseFloat($('coRate').value) || 2850;
+
+    // Gestion du fichier image (Logo)
+    const fileInput = $('logoUpload');
+    if (fileInput && fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      if (file.size > 2 * 1024 * 1024) throw new Error('Le logo est trop lourd (2 Mo maximum).');
+      const fileExt = file.name.split('.').pop();
+      // On crée un nom de fichier unique basé sur l'ID de l'utilisateur
+      const filePath = `${currentUser.id}/logo_${Date.now()}.${fileExt}`;
+
+      // 1. Envoi du fichier dans le bucket "logos" sur Supabase Storage
+      const { error: uploadError } = await _supabase.storage
+        .from('logos')
+        .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // 2. Récupération de son URL publique d'accès
+      const { data: urlData } = _supabase.storage.from('logos').getPublicUrl(filePath);
+      payload.logo_url = urlData.publicUrl;
+    } else if (companyData && companyData.logo_url) {
+      // Si aucun nouveau fichier n'est choisi, on conserve l'ancien logo
+      payload.logo_url = companyData.logo_url;
+    }
+
+    // 3. Sauvegarde ou mise à jour dans la table des entreprises
+    const { error } = await _supabase.from('companies').upsert(payload);
+    if (error) throw error;
+
+    setStatus('companyStatus', 'Enregistré avec succès !', 'ok');
+    await loadCompanyData();
+    await loadCatalog();
+  } catch (err) {
+    setStatus('companyStatus', 'Erreur : ' + err.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+
+/* ---------- CATALOGUE ---------- */
+async function loadCatalog() {
+  const { data, error } = await _supabase.from('catalog').select('*').eq('user_id', currentUser.id).order('name');
+  if (error) { setStatus('productStatus', 'Erreur : ' + error.message, 'err'); }
+  catalogItems = data || [];
+
+  const select = $('catalogSelect');
+  select.innerHTML = '';
+  select.appendChild(new Option('-- Ajouter depuis le catalogue --', ''));
+  catalogItems.forEach(item => select.appendChild(new Option(`${item.name} (${item.price} ${currency()})`, item.id)));
+
+  const list = $('catalogList');
+  list.innerHTML = '';
+  if (!catalogItems.length) { list.innerHTML = '<p class="note">Ton catalogue est vide.</p>'; return; }
+  catalogItems.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'catalog-item';
+    const info = document.createElement('div');
+    const strong = document.createElement('strong');
+    strong.textContent = item.name;
+    const meta = document.createElement('div');
+    meta.className = 'note';
+    meta.textContent = `${fmt(item.price)} ${currency()} / ${item.unit || 'unité'}` + (item.description ? ' — ' + item.description : '');
+    info.append(strong, meta);
+    const del = document.createElement('button');
+    del.type = 'button'; del.className = 'btn danger'; del.textContent = 'Supprimer';
+    del.addEventListener('click', async () => {
+      if (!confirm('Supprimer « ' + item.name + ' » du catalogue ?')) return;
+      const { error } = await _supabase.from('catalog').delete().eq('id', item.id);
+      if (error) { setStatus('productStatus', 'Erreur : ' + error.message, 'err'); return; }
+      loadCatalog();
+    });
+    row.append(info, del);
+    list.appendChild(row);
+  });
+}
+
+$('productForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  setStatus('productStatus', 'Ajout...');
+  const { error } = await _supabase.from('catalog').insert([{
+    user_id: currentUser.id,
+    name: $('prodName').value.trim(),
+    price: parseFloat($('prodPrice').value),
+    unit: $('prodUnit').value.trim() || 'unité',
+    description: $('prodDesc').value.trim()
+  }]);
+  if (error) { setStatus('productStatus', 'Erreur : ' + error.message, 'err'); return; }
+  $('productForm').reset();
+  $('prodUnit').value = 'unité';
+  setStatus('productStatus', 'Article ajouté !', 'ok');
+  loadCatalog();
+});
+
+/* ---------- FACTURE ---------- */
+async function generateInvoiceNumber() {
+  const year = new Date().getFullYear();
+  const prefix = `FAC-${year}-`;
+  let next = 1;
+  try {
+    const { data, error } = await _supabase.from('invoices').select('number')
+      .eq('user_id', currentUser.id).like('number', prefix + '%');
+    if (error) throw error;
+    (data || []).forEach(r => {
+      const m = r.number.match(/^FAC-\d{4}-(\d+)$/);
+      if (m) next = Math.max(next, parseInt(m[1], 10) + 1);
+    });
+    $('invNumber').value = prefix + String(next).padStart(4, '0');
+  } catch (err) {
+    // hors ligne : numéro provisoire, modifiable
+    $('invNumber').value = prefix + Math.floor(1000 + Math.random() * 9000);
+  }
+}
+
+// A Modifier dans loadDraft :
+function loadDraft() {
+  const saved = localStorage.getItem('facturix_draft');
+  if (!saved) return false; // Renvoie false si vide
+  try {
+    const draft = JSON.parse(saved);
+    $('invNumber').value = draft.number || '';
+    $('clientName').value = draft.clientName || '';
+    $('clientPhone').value = draft.clientPhone || '';
+    $('clientEmail').value = draft.clientEmail || '';
+    
+    if (draft.rows && draft.rows.length > 0) {
+      $('invoiceItemsTable').innerHTML = ''; 
+      draft.rows.forEach(row => {
+        addInvoiceRow(row.description, row.unit_price, row.quantity);
+      });
+      return true; // Brouillon chargé avec succès !
+    }
+  } catch (e) {
+    console.error("Erreur lors du chargement du brouillon", e);
+  }
+  return false;
+}
+
+// À Modifier dans resetInvoice :
+async function resetInvoice() {
+  $('invoiceForm').reset();
+  $('invoiceItemsTable').innerHTML = '';
+  $('printArea').hidden = true;
+  $('printInvoiceBtn').hidden = true;
+  $('newInvoiceBtn').hidden = true;
+  setStatus('invoiceStatus', '');
+  await generateInvoiceNumber();
+  
+  const hasDraft = loadDraft(); // On tente de charger d'abord
+  if (!hasDraft) {
+    addInvoiceRow(); // On ne met la ligne vide que s'il n'y a PAS de brouillon !
+  }
+  calculateTotal();
+}
+
+
+function addInvoiceRow(desc = '', price = 0, qte = 1) {
+  const tbody = $('invoiceItemsTable');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input class="row-desc" placeholder="Description" required></td>
+    <td><input class="row-qty" type="number" min="0.01" step="any" inputmode="decimal"></td>
+    <td><input class="row-price" type="number" step="0.01" min="0" inputmode="decimal"></td>
+    <td><strong class="row-total">0,00</strong></td>
+    <td><button class="btn danger" type="button" style="padding:4px 8px">X</button></td>`;
+  tr.querySelector('.row-desc').value = desc;
+  tr.querySelector('.row-qty').value = qte;
+  tr.querySelector('.row-price').value = price;
+
+  // ✅ NOUVELLES LIGNES AVEC SAUVEGARDE DU BROUILLON :
+  tr.querySelector('.btn').addEventListener('click', () => { tr.remove(); calculateTotal(); saveDraft(); });
+  tr.querySelectorAll('input').forEach(inp => inp.addEventListener('input', () => { calculateTotal(); saveDraft(); }));
+
+  tbody.appendChild(tr);
+  calculateTotal();
+}
+
+
+$('addCustomBtn').addEventListener('click', () => addInvoiceRow());
+$('addCatalogBtn').addEventListener('click', () => {
+  const id = $('catalogSelect').value;
+  const item = catalogItems.find(c => String(c.id) === id);
+  if (item) addInvoiceRow(item.name, item.price, 1);
+});
+
+function readRows() {
+  return [...document.querySelectorAll('#invoiceItemsTable tr')].map(tr => {
+    const quantity = parseFloat(tr.querySelector('.row-qty').value) || 0;
+    const unit_price = parseFloat(tr.querySelector('.row-price').value) || 0;
+    return {
+      description: tr.querySelector('.row-desc').value.trim(),
+      quantity, unit_price,
+      total_price: Math.round(quantity * unit_price * 100) / 100
+    };
+  });
+}
+
+function calculateTotal() {
+  const trs = document.querySelectorAll('#invoiceItemsTable tr');
+  const rows = readRows();
+  let grand = 0;
+  rows.forEach((r, i) => { trs[i].querySelector('.row-total').textContent = fmt(r.total_price); grand += r.total_price; });
+  $('invoiceGrandTotal').textContent = fmt(grand);
+  return grand;
+}
+
+$('invoiceForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const rows = readRows().filter(r => r.description);
+  if (!rows.length) { setStatus('invoiceStatus', 'Ajoute au moins un article.', 'err'); return; }
+  if (rows.some(r => r.quantity <= 0)) { setStatus('invoiceStatus', 'Chaque quantité doit être supérieure à 0.', 'err'); return; }
+
+  const total_amount = Math.round(rows.reduce((s, r) => s + r.total_price, 0) * 100) / 100;
+  const btn = $('saveInvoiceBtn');
+  btn.disabled = true;
+  setStatus('invoiceStatus', 'Enregistrement...');
+
+  try {
+    const { data: inv, error } = await _supabase.from('invoices').insert([{
+      user_id: currentUser.id,
+      number: $('invNumber').value.trim(),
+      client_name: $('clientName').value.trim(),
+      client_phone: $('clientPhone').value.trim(),
+      client_email: $('clientEmail').value.trim(),
+      total_amount,
+      currency: currency()
+    }]).select().single();
+    if (error) throw error;
+
+    const items = rows.map(r => ({ invoice_id: inv.id, ...r }));
+    const { error: itemsError } = await _supabase.from('invoice_items').insert(items);
+    if (itemsError) {
+      await _supabase.from('invoices').delete().eq('id', inv.id); // évite une facture vide
+      throw itemsError;
+    }
+
+    setStatus('invoiceStatus', 'Facture enregistrée ! Prête à être imprimée.', 'ok');
+    localStorage.removeItem('facturix_draft'); // Nettoie le brouillon local
+    preparePrintArea(inv, items);
+    $('printInvoiceBtn').hidden = false;
+    $('newInvoiceBtn').hidden = false;
+  } catch (err) {
+    const dup = /duplicate|unique/i.test(err.message) ? ' (ce numéro existe déjà, change-le)' : '';
+    setStatus('invoiceStatus', 'Erreur : ' + err.message + dup, 'err');
+  } finally { btn.disabled = false; }
+});
+
+function preparePrintArea(inv, items) {
+  // A. Gestion de l'affichage dynamique du logo de l'entreprise
+  const logoImg = $('pCoLogo');
+  if (companyData && companyData.logo_url) {
+    logoImg.src = companyData.logo_url;
+    logoImg.style.display = 'block';
+  } else {
+    logoImg.style.display = 'none';
+  }
+
+  // B. Gestion du Taux de change alternatif en bas de facture
+  const cur = inv.currency || currency();
+  const rate = Number(companyData?.exchange_rate) || 2850;
+  
+  // Si la facture originale est en USD, on convertit en CDF. Si elle est en CDF, on convertit en USD.
+  const altTotal = cur === 'USD' ? (inv.total_amount * rate) : (inv.total_amount / rate);
+  const altCurr = cur === 'USD' ? 'CDF' : 'USD';
+  
+  const altTotalEl = $('pAlternativeTotal');
+  if (altTotalEl) {
+    altTotalEl.textContent = `Soit environ : ${fmt(altTotal)} ${altCurr} (Taux du jour : 1 USD = ${fmt(rate)} CDF)`;
+  }
+
+  // C. Remplissage des coordonnées de l'entreprise et du client
+  $('pCoName').textContent = companyData?.name || 'Mon Entreprise';
+  $('pCoDetails').textContent = [companyData?.address, companyData?.city].filter(Boolean).join(', ') +
+    (companyData?.phone ? ' | Tél: ' + companyData.phone : '') +
+    (companyData?.email ? ' | ' + companyData.email : '');
+  $('pInvNumber').textContent = inv.number;
+  $('pInvDate').textContent = 'Date : ' + new Date(inv.created_at || Date.now()).toLocaleDateString('fr-FR');
+  $('pClientName').textContent = inv.client_name;
+  $('pClientDetails').textContent = 'Tél: ' + (inv.client_phone || '-') + ' | E-mail: ' + (inv.client_email || '-');
+
+  // D. Remplissage du tableau des articles de la facture
+  const tbody = $('pItemsTable');
+  tbody.innerHTML = '';
+  items.forEach(it => {
+    const tr = document.createElement('tr');
+    [it.description, it.quantity, fmt(it.unit_price), fmt(it.total_price)].forEach(v => {
+      const td = document.createElement('td'); td.textContent = v; tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  // E. Affichage du montant total final
+  $('pGrandTotal').textContent = fmt(inv.total_amount);
+  document.querySelectorAll('.pCurr').forEach(el => el.textContent = cur);
+  $('pCoMessage').textContent = companyData?.message || 'Merci pour votre confiance !';
+  $('printArea').hidden = false;
+}
+
+$('printInvoiceBtn').addEventListener('click', () => window.print());
+$('newInvoiceBtn').addEventListener('click', () => { localStorage.removeItem('facturix_draft'); resetInvoice(); });
+
+/* ---------- HISTORIQUE ---------- */
+async function loadHistory() {
+  const box = $('historyList');
+  box.innerHTML = '<p class="note">Chargement de ton historique...</p>';
+  const { data, error } = await _supabase.from('invoices').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+  if (error) { box.innerHTML = ''; const p = document.createElement('p'); p.className = 'status err'; p.textContent = 'Erreur : ' + error.message; box.appendChild(p); return; }
+  if (!data.length) { box.innerHTML = '<p class="note">Aucune facture pour le moment.</p>'; return; }
+  box.innerHTML = '';
+  const list = document.createElement('div');
+  list.className = 'catalog-list';
+  data.forEach(inv => {
+    const row = document.createElement('div');
+    row.className = 'catalog-item';
+    const info = document.createElement('div');
+    const strong = document.createElement('strong');
+    strong.textContent = inv.number + ' — ' + inv.client_name;
+    const meta = document.createElement('div');
+    meta.className = 'note';
+    meta.textContent = new Date(inv.created_at).toLocaleDateString('fr-FR') + ' · ' + fmt(inv.total_amount) + ' ' + (inv.currency || 'CDF');
+    info.append(strong, meta);
+    const view = document.createElement('button');
+    view.type = 'button'; view.className = 'btn secondary'; view.textContent = 'Voir / Imprimer';
+    view.addEventListener('click', () => openInvoice(inv));
+    row.append(info, view);
+    list.appendChild(row);
+  });
+  box.appendChild(list);
+}
+
+async function openInvoice(inv) {
+  const { data: items, error } = await _supabase.from('invoice_items').select('*').eq('invoice_id', inv.id);
+  if (error) { alert('Erreur : ' + error.message); return; }
+  setPage('facture');
+  preparePrintArea(inv, items || []);
+  $('printInvoiceBtn').hidden = false;
+  $('newInvoiceBtn').hidden = false;
+  $('printArea').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function loadDashboard() {
+  const cdfEl = $('dashTotalCDF');
+  const usdEl = $('dashTotalUSD');
+  const countEl = $('dashCount');
+  
+  if (countEl) countEl.textContent = "Calcul en cours...";
+
+  try {
+    // Récupère le montant et la devise de toutes les factures de l'utilisateur connecté
+    const { data, error } = await _supabase
+      .from('invoices')
+      .select('total_amount, currency')
+      .eq('user_id', currentUser.id);
+
+    if (error) throw error;
+
+    let totalCDF = 0;
+    let totalUSD = 0;
+
+    if (data) {
+      data.forEach(inv => {
+        if (inv.currency === 'USD') {
+          totalUSD += Number(inv.total_amount) || 0;
+        } else {
+          totalCDF += Number(inv.total_amount) || 0;
+        }
+      });
+    }
+
+    if (cdfEl) cdfEl.textContent = fmt(totalCDF) + ' CDF';
+    if (usdEl) usdEl.textContent = fmt(totalUSD) + ' USD';
+    if (countEl) countEl.textContent = `${data ? data.length : 0} achat(s) enregistré(s) au total.`;
+
+  } catch (err) {
+    if (countEl) countEl.textContent = "Erreur de chargement : " + err.message;
+  }
+}
+
+
+/* ---------- NAVIGATION ---------- */
+function setPage(target) {
+  document.querySelectorAll('.nav button').forEach(x => x.classList.toggle('active', x.dataset.page === target));
+  
+  ['entreprise', 'catalogue', 'facture', 'historique', 'politique', 'dashboard'].forEach(p => { 
+    const el = $('page-' + p);
+    if (el) el.hidden = (p !== target); 
+  });
+  
+  if (target === 'historique') loadHistory();
+  if (target === 'dashboard') loadDashboard(); // Déclenche le calcul automatique
+}
+
+
+document.querySelectorAll('.nav button').forEach(b => b.addEventListener('click', () => setPage(b.dataset.page)));
+
+checkSession();
+})();
+
+</script>
+</body>
+</html>
