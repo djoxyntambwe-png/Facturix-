@@ -1,9 +1,3 @@
-/* ============================================================
-   FACTURIX — app.js : logique globale
-   (connexion Supabase, profils, factures/devis, missions, équipe,
-   tableau de bord, mode hors-ligne). Le mentor IA est dans js/mentor-ia/.
-   ============================================================ */
-// Affiche une barre discrète si une erreur de nos fichiers casse l'écran
 window.addEventListener('error', e => {
   if (e.filename && /app\.js|core-ia|prompt-/.test(e.filename)) { const b = document.getElementById('errBar'); if (b) b.hidden = false; console.error(e.message); }
 });
