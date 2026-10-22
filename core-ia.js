@@ -1,13 +1,3 @@
-/* ============================================================
-   core-ia.js — Mentor IA : moteur commun à tous les profils
-   - Choisit les instructions selon le profil (commerçant / prestataire)
-   - Appelle la fonction Supabase « facturix-mentor » (la clé Gemini
-     reste CÔTÉ SERVEUR, jamais dans le navigateur)
-   - Gère l'écran de conversation (messages, questions rapides, historique)
-
-   Modèle Gemini : il se règle dans Supabase (secret GEMINI_MODEL).
-   « gemini-1.5-flash » n'existe plus : utilise « gemini-2.5-flash ».
-   ============================================================ */
 (function () {
   'use strict';
   const CONFIG = { fonction: 'facturix-mentor', historique: 8, gardes: 20, questionMax: 500 };
