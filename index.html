@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#10243e">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://gravdcorborgssicqkso.supabase.co" crossorigin>
+<link rel="manifest" href="./manifest.json">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://gravdcorborgssicqkso.supabase.co" crossorigin>
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="FACTURIX">
+<meta name="description" content="FACTURIX : factures, devis, missions et mentor pour les entrepreneurs africains">
+<title>FACTURIX — Facturation professionnelle</title>
+<link rel="stylesheet" href="css/styles.css?v=026">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div id="errBar" class="no-print" hidden style="background:#fff0f1;color:#bd3542;padding:10px 14px;font-size:13px;text-align:center">Un petit problème est survenu. <button class="btn secondary" type="button" onclick="location.reload()">Recharger</button></div>
+<noscript><p style="padding:20px">FACTURIX a besoin de JavaScript pour fonctionner.</p></noscript>
+<header class="no-print"><div class="header-inner"><div class="brand">FACTURI<span>X</span></div><p>La facturation simplifiée pour les entrepreneurs.</p></div></header>
+<main>
+  <!-- AUTHENTIFICATION -->
+  <section id="authView" class="card no-print">
+    <h2 id="authTitle">Bienvenue sur FACTURIX</h2>
+    <p class="note">Connecte-toi ou crée ton compte pour accéder à ton espace de facturation en ligne.</p>
+    <form id="authForm">
+      <div id="authNameField" class="field" hidden><label for="authName">Nom complet</label><input id="authName" maxlength="120" autocomplete="name" placeholder="Ton nom complet"></div>
+      <div id="authExtra" hidden>
+        <div class="field"><label style="font-weight:400"><input type="checkbox" id="isTeam" style="width:auto"> J'ai un code équipe (je rejoins l'entreprise de mon patron)</label></div>
+        <div id="ownerFields">
+        <div class="field"><label for="authCountry">Ton pays (la devise s'adapte)</label><select id="authCountry"></select></div>
+        <div class="field"><label>Ton activité</label>
+          <label style="font-weight:400"><input type="radio" name="bt" value="commercant" checked style="width:auto"> Commerçant (vente au comptoir)</label>
+          <label style="font-weight:400"><input type="radio" name="bt" value="prestataire" style="width:auto"> Prestataire de services (devis, missions)</label></div>
+        </div>
+        <div class="field" id="teamField" hidden><label for="authTeam">Code équipe</label><input id="authTeam" maxlength="12" placeholder="Ex. K7M2QX" autocapitalize="characters"></div>
+      </div>
+      <div class="field"><label for="authEmail">Adresse e-mail</label><input id="authEmail" type="email" required autocomplete="username" placeholder="toi@exemple.com"></div>
+      <div class="field"><label for="authPassword">Mot de passe</label><input id="authPassword" type="password" required minlength="8" autocomplete="current-password" placeholder="8 caractères minimum"></div>
+      <div class="actions">
+        <button class="btn primary" id="authSubmit" type="submit">Se connecter</button>
+        <button class="btn secondary" id="switchAuth" type="button">Créer un compte</button>
+        <button class="btn secondary" id="forgotBtn" type="button">Mot de passe oublié</button>
+      </div>
+      <p id="authMessage" class="status" role="status"></p>
+    </form>
+  </section>
+
+  <section id="resetView" class="card no-print" hidden>
+    <h2>🔑 Nouveau mot de passe</h2>
+    <form id="resetForm">
+      <div class="field"><label for="newPw">Nouveau mot de passe</label><input id="newPw" type="password" minlength="8" required autocomplete="new-password" placeholder="8 caractères minimum"></div>
+      <div class="field"><label for="newPw2">Répète-le</label><input id="newPw2" type="password" minlength="8" required autocomplete="new-password"></div>
+      <button class="btn primary" type="submit">Enregistrer le mot de passe</button>
+      <p id="resetMsg" class="status"></p>
+    </form>
+  </section>
+
+  <div id="splash" class="card no-print" hidden>⏳ Chargement de ton espace…</div>
+
+  <section id="lockView" class="card no-print" hidden>
+    <h2>🔒 Accès suspendu</h2>
+    <p class="note">L'abonnement PRO de ton entreprise n'est plus actif. Demande à ton patron de le renouveler, puis reconnecte-toi.</p>
+    <button class="btn danger" id="lockOut" type="button">Déconnexion</button>
+  </section>
+
+  <!-- APPLICATION PRINCIPALE -->
+  <div id="appView" hidden>
+    <p id="netBadge" class="note no-print" style="background:#fff7e0;padding:8px 12px;border-radius:8px" hidden>📴 Hors-ligne : tes documents seront envoyés au retour du réseau.</p>
+    <div class="topline card no-print">
+      <div><strong id="welcome"></strong><p class="note" style="margin-bottom:0" id="planBar">Ton espace FACTURIX</p></div>
+      <button class="btn secondary" id="proBtn" type="button" hidden>⭐ Passer PRO</button>
+      <button class="btn danger" id="logoutBtn" type="button">Déconnexion</button>
+    </div>
+        <nav class="nav no-print">
+      <button type="button" class="active" data-page="facture">Nouvelle facture</button>
+      <button type="button" data-page="dashboard">📊 Tableau de bord</button> <!-- Ajouté ici ! -->
+      <button type="button" data-page="depenses">💸 Dépenses</button>
+      <button type="button" data-page="mentor">🧑‍🏫 Mentor</button>
+      <button type="button" data-page="missions">📋 Missions</button>
+      <button type="button" data-page="equipe">👥 Équipe</button>
+      <button type="button" data-page="entreprise">Mon entreprise</button>
+      <button type="button" data-page="catalogue">Catalogue</button>
+      <button type="button" data-page="historique">Mes factures</button>
+      <button type="button" data-page="politique">Politique & Mentions</button>
+    </nav>
+
+
+    <!-- ENTREPRISE -->
+    <section class="card no-print" id="page-entreprise" hidden>
+      <h2>🏢 Mon entreprise</h2>
+      <form id="companyForm">
+        <div class="grid">
+          <div class="field"><label for="coName">Nom commercial *</label><input id="coName" required maxlength="100" placeholder="Ex. TAMZORYA"></div>
+          <div class="field"><label for="coPhone">Téléphone *</label><input id="coPhone" required maxlength="40" placeholder="+243..."></div>
+          <div class="field"><label for="coEmail">E-mail</label><input id="coEmail" type="email" maxlength="120"></div>
+          <div class="field"><label for="coAddress">Adresse</label><input id="coAddress" maxlength="180"></div>
+          <div class="field"><label for="coCity">Ville</label><input id="coCity" maxlength="80" value="Kinshasa"></div>
+          <div class="field"><label for="coTax">N° d'impôt / NIF (PRO)</label><input id="coTax" maxlength="40"></div>
+          <div class="field"><label for="coRccm">RCCM / Id. Nat. (PRO)</label><input id="coRccm" maxlength="40"></div>
+          <div class="field"><label for="coColor">Couleur de tes documents (PRO)</label><input id="coColor" type="color" value="#123b70"></div>
+          <div class="field"><label for="coMomo">Numéro Mobile Money (sur la facture)</label><input id="coMomo" maxlength="40" placeholder="+243..."></div>
+          <div class="field"><label for="coCurrency">Devise</label><select id="coCurrency"><option value="CDF">CDF — Franc congolais</option><option value="USD">USD — Dollar américain</option></select></div>
+          <div class="field">
+  <label for="logoUpload">Logo de l'entreprise (PNG, JPG)</label>
+  <input type="file" id="logoUpload" accept="image/*"></div>
+          <div class="field"><label for="coRate">Taux de change (1 USD = X <span class="locCur">CDF</span>) *</label><input id="coRate" type="number" value="2300" required></div>
+
+        </div>
+        <div class="field"><label for="coMessage">Message de fin</label><textarea id="coMessage" maxlength="300">Merci pour votre confiance !</textarea></div>
+        <button class="btn primary" type="submit">Enregistrer l'entreprise</button>
+        <p id="companyStatus" class="status"></p>
+      </form>
+    </section>
+
+    <!-- CATALOGUE -->
+    <section class="card no-print" id="page-catalogue" hidden>
+      <h2>📦 Catalogue de produits et services</h2>
+      <form id="productForm">
+        <div class="grid">
+          <div class="field"><label for="prodName">Nom de l'article *</label><input id="prodName" required maxlength="120"></div>
+          <div class="field"><label for="prodPrice">Prix unitaire *</label><input id="prodPrice" type="number" step="0.01" min="0" required inputmode="decimal"></div>
+          <div class="field"><label for="prodUnit">Unité</label><input id="prodUnit" maxlength="40" value="unité"></div>
+          <div class="field"><label for="prodStock">Stock de départ (facultatif)</label><input id="prodStock" type="number" min="0" step="any" inputmode="decimal"></div>
+          <div class="field"><label for="prodDesc">Description</label><input id="prodDesc" maxlength="200"></div>
+        </div>
+        <button class="btn primary" type="submit">Ajouter au catalogue</button>
+        <p id="productStatus" class="status"></p>
+      </form>
+      <div style="margin-top:20px"><div id="catalogList" class="catalog-list"></div></div>
+    </section>
+
+    <!-- NOUVELLE FACTURE -->
+    <section class="card" id="page-facture">
+      <div class="no-print">
+        <h2 id="invTitle">🧾 Créer une facture</h2>
+        <form id="invoiceForm">
+          <div class="grid">
+            <div class="field"><label for="invNumber" id="invNumLabel">Numéro de facture *</label><input id="invNumber" required placeholder="FAC-2026-001"></div>
+            <div class="field" id="docTypeField"><label for="docType">Type de document</label><select id="docType"><option value="facture">Facture</option><option value="devis">Devis (proforma)</option></select></div>
+            <div class="field" id="paidField"><label style="font-weight:400"><input type="checkbox" id="paidNow" checked style="width:auto"> Déjà payé (vente au comptoir)</label></div>
+            <div class="field"><label for="clientName">Nom du client *</label><input id="clientName" required placeholder="Nom du client / Entreprise"></div>
+            <div class="field"><label for="clientPhone">Téléphone client</label><input id="clientPhone" placeholder="+243..."></div>
+            <div class="field"><label for="clientEmail">E-mail client</label><input id="clientEmail" type="email"></div>
+          </div>
+
+          <h3>Articles de la facture</h3>
+          <div class="actions" style="margin-bottom:12px">
+            <select id="catalogSelect" style="flex:1"><option value="">-- Ajouter depuis le catalogue --</option></select>
+            <button class="btn secondary" type="button" id="addCatalogBtn">Ajouter</button>
+            <button class="btn secondary" type="button" id="addCustomBtn">+ Ligne vierge</button>
+            <button class="btn secondary" type="button" id="addLaborBtn" hidden>+ Main-d'œuvre</button>
+            <button class="btn secondary" type="button" id="addMaterialBtn" hidden>+ Fournitures</button>
+            <datalist id="lineSuggest"></datalist>
+          </div>
+
+          <input id="catSearch" placeholder="🔎 Chercher un produit" style="margin-bottom:8px">
+          <div id="catalogChips" class="actions" style="margin-bottom:10px"></div>
+          <div class="table-wrap">
+          <table>
+            <thead><tr><th style="min-width:160px">Description</th><th style="width:90px">Qté</th><th style="width:120px">Prix unitaire</th><th style="width:110px">Total</th><th style="width:60px"></th></tr></thead>
+            <tbody id="invoiceItemsTable"></tbody>
+          </table>
+          </div>
+
+          <div class="field" id="tvaBox"><label style="font-weight:400"><input type="checkbox" id="tvaOn" style="width:auto"> Ajouter la TVA (PRO)</label>
+            <input id="tvaRate" type="number" min="0" max="100" step="0.01" value="16" hidden style="margin-top:6px" inputmode="decimal" placeholder="Taux %"></div>
+          <p class="note" id="tvaInfo"></p>
+          <p class="note" id="kindTotals"></p>
+          <div id="quoteFields" hidden>
+            <div class="grid">
+              <div class="field"><label for="qValid">Validité du devis (jours)</label><input id="qValid" type="number" min="1" value="15" inputmode="numeric"></div>
+              <div class="field"><label for="qDeposit">Acompte sur la main-d'œuvre (%)</label><input id="qDeposit" type="number" min="0" max="100" value="50" inputmode="numeric"></div>
+            </div>
+            <div class="field"><label style="font-weight:400"><input type="checkbox" id="ownSupplies" style="width:auto"> Les fournitures viennent de moi (je les compte dans mon revenu)</label></div>
+            <div class="field"><label for="qMin">Mon prix minimum pour la main-d'œuvre (privé, jamais montré au client)</label><input id="qMin" type="number" min="0" inputmode="decimal" placeholder="Ex. 40000"></div>
+            <div class="field"><label for="qNote">Conditions / remarques</label><textarea id="qNote" maxlength="400">Les fournitures sont achetées après versement de l'acompte. Leurs prix sont estimatifs et peuvent varier selon le marché.</textarea></div>
+          </div>
+          <div style="text-align:right;margin:15px 0;font-size:18px">
+            <strong>Total : <span id="invoiceGrandTotal">0,00</span> <span class="currSymbol">CDF</span></strong>
+          </div>
+
+          <div class="actions">
+            <button class="btn success" id="saveInvoiceBtn" type="submit">Enregistrer la facture</button>
+            <button class="btn primary" type="button" id="printInvoiceBtn" hidden>Imprimer / Exporter PDF</button>
+            <button class="btn secondary" type="button" id="newInvoiceBtn" hidden>Nouvelle facture</button>
+          </div>
+          <p id="invoiceStatus" class="status"></p>
+        </form>
+      </div>
+
+      <!-- APERÇU / ZONE D'IMPRESSION -->
+      <div id="printArea" hidden style="margin-top:20px;border-top:2px dashed var(--border);padding-top:20px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+  <div>
+    <!-- 1. Le Logo est placé ici, juste au-dessus du nom de la boutique -->
+    <img id="pCoLogo" src="" alt="Logo" style="max-height: 60px; max-width: 150px; display: none; margin-bottom: 10px;">
+    
+    <h1 id="pCoName" style="margin:0;color:var(--dark)"></h1>
+    <p id="pCoDetails" class="note" style="margin:5px 0"></p>
+  </div>
+  <div style="text-align:right">
+    <h2 id="pDocTitle" style="margin:0;color:var(--primary)">FACTURE</h2>
+    <strong id="pInvNumber"></strong><br>
+    <span id="pInvDate" class="note"></span>
+  </div>
+</div>
+
+        <hr style="margin:20px 0;border:0;border-top:1px solid var(--border)">
+        <div>
+          <h3>Facturé à :</h3>
+          <strong id="pClientName"></strong><br>
+          <span id="pClientDetails" class="note"></span>
+        </div>
+        <table style="margin-top:20px">
+          <thead><tr><th>Description</th><th>Qté</th><th>Prix unitaire</th><th>Total</th></tr></thead>
+          <tbody id="pItemsTable"></tbody>
+        </table>
+        <div style="text-align:right;font-size:20px;margin-top:15px">
+          <strong>TOTAL : <span id="pGrandTotal"></span> <span class="pCurr">CDF</span></strong>
+        </div>
+        <div id="pAlternativeTotal" class="note" style="text-align:right; margin-top:5px; font-weight:600;"></div>
+        
+        <div id="pExtra" class="note" style="margin-top:12px;white-space:pre-line"></div>
+        <p id="pCoMessage" class="note" style="margin-top:30px;text-align:center;font-style:italic"></p>
+      </div>
+    </section>
+
+    <!-- HISTORIQUE -->
+    <section class="card no-print" id="page-historique" hidden>
+      <h2>📋 Mes factures</h2>
+      <button class="btn secondary" id="csvBtn" type="button" style="margin-bottom:10px">⬇️ Exporter vers Excel (PRO)</button>
+      <div class="grid"><div class="field"><input id="histSearch" placeholder="🔎 Client ou numéro"></div>
+      <div class="field"><select id="histFilter"><option value="">Tout</option><option value="impayee">À encaisser</option><option value="payee">Payées</option><option value="devis">Devis</option><option value="facture">Factures</option></select></div></div>
+      <div id="historyList"><p class="note">Chargement de ton historique...</p></div>
+    </section>
+
+    <!-- MISSIONS -->
+    <section class="card no-print" id="page-missions" hidden>
+      <h2 id="misTitle">📋 Missions</h2>
+      <div id="misNew" hidden>
+        <div class="field"><label for="misAssignee">Pour qui ?</label><select id="misAssignee"></select></div>
+        <div class="field"><label for="misName">Titre *</label><input id="misName" maxlength="120"></div>
+        <div class="field"><label for="misDetails">Ce qu'il faut faire / acheter</label><textarea id="misDetails" maxlength="800"></textarea></div>
+        <div class="grid">
+          <div class="field"><label for="misPayType">Paiement</label><select id="misPayType"><option value="fixed">Montant fixe</option><option value="percent">Pourcentage</option></select></div>
+          <div class="field"><label for="misPayValue" id="misPayLbl">Montant</label><input id="misPayValue" type="number" min="0" step="0.01" inputmode="decimal"></div>
+          <div class="field" id="misBaseBox" hidden><label for="misBase">Montant de base (main-d'œuvre)</label><input id="misBase" type="number" min="0" step="0.01" inputmode="decimal"></div>
+          <div class="field"><label for="misDue">Payer le (facultatif)</label><input id="misDue" type="date"></div>
+        </div>
+        <button class="btn primary" id="misSend" type="button">Envoyer</button>
+        <p id="misStatus" class="status"></p>
+      </div>
+      <div id="misList" class="catalog-list"></div>
+      <div id="vouchBox" hidden style="margin-top:18px"><h3>🧾 Bons de paiement (gardés 6 mois)</h3><div id="vouchList" class="catalog-list"></div></div>
+      <div id="misReport" hidden style="margin-top:18px">
+        <h3>📝 Envoyer un rapport</h3>
+        <textarea id="repText" maxlength="800" placeholder="Résume ton travail, les ventes, les problèmes..."></textarea>
+        <button class="btn secondary" id="repSend" type="button" style="margin-top:8px">Envoyer le rapport (WhatsApp)</button>
+      </div>
+      <div id="repBox" hidden style="margin-top:18px"><h3>📨 Rapports reçus</h3><div id="repList" class="catalog-list"></div></div>
+    </section>
+
+    <!-- MENTOR -->
+    <section class="card no-print" id="page-mentor" hidden>
+      <h2>🧑‍🏫 Mentor FACTURIX</h2>
+      <p class="note" id="mentorLeft"></p>
+      <div id="chatBox" style="min-height:45vh;max-height:60vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:4px 0"></div>
+      <div id="chatChips" class="actions" style="margin:10px 0"></div>
+      <div class="actions" style="flex-wrap:nowrap">
+        <input id="mentorQ" maxlength="300" placeholder="Écris ta question..." style="flex:1">
+        <button class="btn primary" id="mentorBtn" type="button">Envoyer</button>
+      </div>
+      <button class="btn secondary" id="chatReset" type="button" style="margin-top:10px">Nouvelle conversation</button>
+    </section>
+
+    <!-- ÉQUIPE -->
+    <section class="card no-print" id="page-equipe" hidden>
+      <h2>👥 Mon équipe</h2>
+      <p class="note" id="teamHelp">Crée un code et donne-le à ton vendeur ou associé. Il l'écrit à l'inscription (ou à sa prochaine inscription). Vendeur : ventes uniquement. Associé : tout sauf l'équipe.</p>
+      <div class="actions"><select id="inviteRole" style="flex:1"><option value="vendeur">Vendeur</option><option value="associe">Associé</option></select>
+      <button class="btn primary" id="inviteBtn" type="button">Créer un code</button></div>
+      <div id="teamList" class="catalog-list"></div>
+    </section>
+
+    <!-- DÉPENSES -->
+    <section class="card no-print" id="page-depenses" hidden>
+      <h2>💸 Mes dépenses</h2>
+      <form id="expenseForm">
+        <div class="grid">
+          <div class="field"><label for="expDate">Date *</label><input id="expDate" type="date" required></div>
+          <div class="field"><label for="expCategory">Catégorie</label>
+            <select id="expCategory">
+              <option>Achat de marchandises</option><option>Transport</option><option>Loyer</option>
+              <option>Salaires</option><option>Électricité / Eau</option><option>Internet / Communication</option>
+              <option>Publicité</option><option>Autre</option>
+            </select></div>
+          <div class="field"><label for="expDesc">Description *</label><input id="expDesc" required maxlength="150" placeholder="Ex. Carton de savon"></div>
+          <div class="field"><label for="expAmount">Montant *</label><input id="expAmount" type="number" step="0.01" min="0.01" required inputmode="decimal"></div>
+          <div class="field"><label for="expCurrency">Devise</label><select id="expCurrency"><option value="CDF">CDF</option><option value="USD">USD</option></select></div>
+        </div>
+        <button class="btn primary" type="submit">Ajouter la dépense</button>
+        <p id="expenseStatus" class="status"></p>
+      </form>
+      <p class="note" id="expenseTotals" style="margin-top:15px;font-weight:650"></p>
+      <div id="expenseList" class="catalog-list"></div>
+    </section>
+
+    <!-- TABLEAU DE BORD -->
+    <section class="card no-print" id="page-dashboard" hidden>
+      <h2>📊 Résumé de votre activité</h2>
+      <div class="field">
+        <label for="dashPeriod">Période</label>
+        <select id="dashPeriod">
+          <option value="today">Aujourd'hui</option>
+          <option value="month" selected>Ce mois-ci</option>
+          <option value="year">Cette année</option>
+          <option value="all">Depuis le début</option>
+        </select>
+      </div>
+      <div class="grid">
+        <div class="card" style="background: #e9f1fc; text-align: center; border-left: 5px solid var(--primary); margin-bottom: 0;">
+          <h3 style="margin: 0; color: var(--primary); font-size: 14px;"><span class="salesLbl">Total Ventes</span> (<span class="locCur">CDF</span>)</h3>
+          <p id="dashTotalCDF" style="font-size: 22px; font-weight: 800; margin: 8px 0 0; color: var(--dark);">0,00 CDF</p>
+        </div>
+        <div class="card" style="background: #eafaf1; text-align: center; border-left: 5px solid var(--green); margin-bottom: 0;">
+          <h3 style="margin: 0; color: var(--green); font-size: 14px;"><span class="salesLbl">Total Ventes</span> (USD)</h3>
+          <p id="dashTotalUSD" style="font-size: 22px; font-weight: 800; margin: 8px 0 0; color: var(--dark);">0,00 USD</p>
+        </div>
+      </div>
+      <div class="grid" style="margin-top:12px">
+        <div class="card" style="background:#fff0f1; text-align:center; border-left:5px solid var(--red); margin-bottom:0;">
+          <h3 style="margin:0; color:var(--red); font-size:14px;">Dépenses (<span class="locCur">CDF</span>)</h3>
+          <p id="dashExpCDF" style="font-size:20px; font-weight:800; margin:8px 0 0; color:var(--dark);">0,00 CDF</p>
+        </div>
+        <div class="card" style="background:#fff0f1; text-align:center; border-left:5px solid var(--red); margin-bottom:0;">
+          <h3 style="margin:0; color:var(--red); font-size:14px;">Dépenses (USD)</h3>
+          <p id="dashExpUSD" style="font-size:20px; font-weight:800; margin:8px 0 0; color:var(--dark);">0,00 USD</p>
+        </div>
+        <div class="card" style="text-align:center; border-left:5px solid var(--dark); margin-bottom:0;">
+          <h3 style="margin:0; font-size:14px;">Bénéfice (<span class="locCur">CDF</span>)</h3>
+          <p id="dashProfitCDF" style="font-size:20px; font-weight:800; margin:8px 0 0;">0,00 CDF</p>
+        </div>
+        <div class="card" style="text-align:center; border-left:5px solid var(--dark); margin-bottom:0;">
+          <h3 style="margin:0; font-size:14px;">Bénéfice (USD)</h3>
+          <p id="dashProfitUSD" style="font-size:20px; font-weight:800; margin:8px 0 0;">0,00 USD</p>
+        </div>
+      </div>
+      <div class="card" style="margin:15px 0 0">
+        <h3 style="margin-top:0"><span id="cashTitle">💰 Encaissé / À encaisser</span></h3>
+        <p id="cashText" style="white-space:pre-line;margin:0;font-weight:650"></p>
+      </div>
+      <div class="card" style="margin:15px 0 0">
+        <h3 style="margin-top:0">🎯 Objectif du mois</h3>
+        <div style="background:#e9f1fc;border-radius:8px;height:16px"><div id="goalBar" style="height:16px;border-radius:8px;background:var(--green);width:0"></div></div>
+        <p class="note" id="goalText"></p><button class="btn secondary" id="goalBtn" type="button">Définir mon objectif</button>
+      </div>
+      <div class="card" style="margin:15px 0 0">
+        <h3 style="margin-top:0">🧑‍🏫 Mentor FACTURIX</h3>
+        <p class="note">Pose tes questions dans un écran dédié, plus grand.</p>
+        <button class="btn primary" id="mentorOpen" type="button">Ouvrir le Mentor</button>
+      </div>
+      <div class="card" id="proDashBox" style="margin:15px 0 0" hidden>
+        <h3 style="margin-top:0">📈 Bénéfice net par mois</h3>
+        <svg id="profitChart" viewBox="0 0 300 120" style="width:100%"></svg>
+        <h3>🏆 Meilleurs clients (6 mois)</h3><div id="topClients" class="note"></div>
+        <h3 id="topItemsTitle">📦 Plus vendus (6 mois)</h3><div id="topItems" class="note"></div>
+        <div id="quoteBox"><h3>📨 Mes devis</h3><div id="quoteStats" class="note"></div></div>
+      </div>
+      <p class="note" id="proLock" style="text-align:center;margin-top:12px" hidden>🔒 Graphique et meilleurs clients : plan PRO</p>
+      <p class="note" style="margin-top: 15px; text-align: center; font-weight: 650;" id="dashCount">0 facture(s) sur la période.</p>
+    </section>
+
+    
+    <!-- ONGLET À PROPOS & POLITIQUE -->
+<section class="card no-print" id="page-pro" hidden>
+  <h2>⭐ FACTURIX PRO</h2>
+  <div class="grid">
+    <div class="card" style="text-align:center;margin:0"><h3 style="margin-top:0">Mensuel</h3><p style="font-size:26px;font-weight:800;margin:6px 0">2 $</p><p class="note">par mois</p></div>
+    <div class="card" style="text-align:center;margin:0;border:2px solid var(--green)"><h3 style="margin-top:0">Annuel ⭐</h3><p style="font-size:26px;font-weight:800;margin:6px 0">20 $</p><p class="note">par an · 2 mois offerts</p></div>
+  </div>
+  <h3>Ce que tu débloques</h3>
+  <p class="note" id="proListCom">✅ Factures illimitées<br>✅ Relances et reçus WhatsApp avec ton numéro de paiement<br>✅ Paiements partiels (acomptes)<br>✅ TVA et NIF sur tes factures<br>✅ Équipe : vendeurs et associés<br>✅ Plus vendus, graphique du bénéfice, meilleurs clients<br>✅ Mentor FACTURIX (100 questions par mois)<br>✅ Export Excel et ta couleur sur tes documents</p>
+  <p class="note" id="proListPrest" hidden>✅ Devis illimités (au lieu de 5 par mois)<br>✅ Main-d'œuvre reçue en plusieurs versements<br>✅ Relances WhatsApp des devis sans réponse<br>✅ Messages avec ton numéro de paiement et l'acompte<br>✅ TVA et NIF sur tes devis<br>✅ Aides (personnel) avec leur propre accès<br>✅ Services les plus demandés, taux d'acceptation, graphique<br>✅ Mentor FACTURIX (100 questions par mois)<br>✅ Export Excel et ta couleur sur tes devis</p>
+  <h3>Comment payer</h3>
+  <p class="note">1. Envoie le montant par Mobile Money :</p>
+  <div id="payList" class="catalog-list"></div>
+  <p class="note">2. Appuie sur le bouton ci-dessous et envoie la capture du paiement sur WhatsApp.<br>3. Ton compte passe PRO rapidement.<br>Le nom du bénéficiaire s'affiche sur ton téléphone avant de confirmer. Un doute ? Écris-nous sur WhatsApp avant de payer.</p>
+  <div class="actions"><button class="btn success" id="payMonthBtn" type="button">J'ai payé 2 $ (mensuel)</button><button class="btn success" id="payYearBtn" type="button">J'ai payé 20 $ (annuel)</button></div>
+</section>
+
+<section class="card no-print" id="page-politique" hidden>
+  <!-- SECTION CRÉATEUR -->
+  <div style="background: var(--light); border: 1px solid var(--border); border-radius: 10px; padding: 15px; margin-bottom: 20px; text-align: center;">
+    <h3 style="margin-top: 0; font-size: 18px; color: var(--primary);">🚀 À propos du créateur</h3>
+    <p style="margin: 5px 0 15px; font-weight: 650; font-size: 16px;">Développé par Djoxy Ntambwe</p>
+    <p class="note" style="margin-bottom: 15px;">Une solution conçue pour digitaliser et simplifier la gestion des entrepreneurs en RD Congo.</p>
+    
+    <div class="actions" style="justify-content: center; gap: 10px;">
+      <!-- Bouton WhatsApp -->
+      <a href="https://wa.me/message/KQLKOI6IDLTMF1" target="_blank" rel="noopener noreferrer" class="btn success" style="text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+        💬 WhatsApp
+      </a>
+      <!-- Bouton LinkedIn -->
+      <a href="https://www.linkedin.com/in/djoxy-ntambwe-852554422?utm_source=share_via&utm_content=profile&utm_medium=member_ios" target="_blank" rel="noopener noreferrer" class="btn primary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+        💼 LinkedIn
+      </a>
+      <!-- Bouton Facebook -->
+      <a href="https://www.facebook.com/share/1ZsXqc4RdG/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" class="btn secondary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border);">
+        🔵 Facebook
+      </a>
+    </div>
+  </div>
+
+  <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
+  <h2>⚖️ Confidentialité et conditions</h2>
+  <p class="note"><strong>Dernière mise à jour : 18 octobre 2026</strong><br>Touche un titre pour lire la rubrique.</p>
+
+  <details open><summary>1. Qui sommes-nous</summary><p class="note">FACTURIX est édité par Djoxy Ntambwe (République démocratique du Congo). Pour toute question : WhatsApp +243 977 790 082.</p></details>
+  <details><summary>2. Les données que nous gardons</summary><p class="note"><strong>Ton compte :</strong> e-mail, nom, pays, type d'activité. Le mot de passe est protégé par le système de connexion et nous ne pouvons pas le lire.<br><strong>Ton entreprise :</strong> nom, téléphone, adresse, logo, numéro Mobile Money.<br><strong>Ton activité :</strong> catalogue, stock, factures, devis, dépenses, objectif.<br><strong>Tes clients :</strong> le nom, le téléphone et l'e-mail que tu écris sur tes factures. Tu es responsable d'avoir le droit de les enregistrer.<br>Nous ne gardons aucun code secret ni donnée de carte bancaire.</p></details>
+  <details><summary>3. À quoi servent ces données</summary><p class="note">Uniquement à faire fonctionner FACTURIX : créer tes documents, calculer tes résultats, retrouver ton historique, gérer ton plan et t'aider en cas de problème.</p></details>
+  <details><summary>4. Où elles sont et qui peut les voir</summary><p class="note">Elles sont hébergées chez Supabase, avec des règles qui séparent chaque compte. Si tu crées une équipe : le <strong>vendeur</strong> ne voit que ses propres ventes, l'<strong>associé</strong> voit tout sauf la gestion de l'équipe, et toi, le propriétaire, tu vois tout. Tu peux retirer un équipier à tout moment.</p></details>
+  <details><summary>5. Les liens de devis et de factures</summary><p class="note">Quand tu envoies un document par WhatsApp, toute personne qui a le lien peut le lire : nom de ton entreprise, articles, montants et coordonnées du client. Le lien est long et unique, mais envoie-le seulement à ton client.</p></details>
+  <details><summary>6. Le mentor FACTURIX (IA)</summary><p class="note">Quand tu poses une question au mentor, un résumé de tes chiffres (ventes, bénéfice, objectif, stock bas, noms de tes meilleurs clients) et ta question sont envoyés à Google (Gemini) pour préparer la réponse. Tes factures complètes et ton mot de passe ne sont jamais envoyés. N'écris pas d'informations très personnelles dans ta question. Les conseils sont une aide, pas une garantie.</p></details>
+  <details><summary>7. Ce qui reste sur ton téléphone</summary><p class="note">Pour t'aider quand le réseau est mauvais, FACTURIX garde sur ton appareil : ta session de connexion, le brouillon en cours, les documents faits hors-ligne en attente d'envoi, une copie de ton entreprise et de ton catalogue, et une copie de l'application. Sur un téléphone partagé, appuie sur « Déconnexion » après usage.</p></details>
+  <details><summary>8. Partage de tes données</summary><p class="note">Nous ne vendons pas tes données et nous ne les utilisons pas pour de la publicité. Elles ne sont partagées qu'avec les services techniques nécessaires (hébergement Supabase, Google pour le mentor, WhatsApp quand c'est toi qui envoies un document), ou si la loi l'exige.</p></details>
+  <details><summary>9. Tes droits</summary><p class="note">Tu peux demander à voir, corriger, récupérer ou supprimer tes données, ou supprimer ton compte, en écrivant sur WhatsApp au +243 977 790 082 depuis l'e-mail de ton compte. Nous répondons dans un délai raisonnable.</p></details>
+  <details><summary>10. Plans et abonnement PRO</summary><p class="note">Plan gratuit : 10 factures par mois pour les commerçants, 5 devis par mois pour les prestataires. Plan PRO : 2 $ par mois ou 20 $ par an, payé par Mobile Money en dehors de l'application, puis activé manuellement après vérification du paiement. À la fin de la période, ton compte revient au plan gratuit : tes données restent conservées. En cas d'erreur de paiement, écris-nous.</p></details>
+  <details><summary>11. Responsabilité</summary><p class="note">FACTURIX est un outil d'aide à la gestion pour les entrepreneurs et petites entreprises. L'exactitude des informations saisies, de la numérotation, des calculs et des obligations fiscales relève de ta responsabilité. Nous faisons le maximum pour que le service reste disponible, sans pouvoir le garantir à 100 %.</p></details>
+  <details><summary>12. Mineurs et changements</summary><p class="note">FACTURIX s'adresse aux personnes de 18 ans et plus. Si cette politique change, la date ci-dessus sera mise à jour et un message sera affiché dans l'application.</p></details>
+
+</section>
+  </div>
+</main>
+<div id="voucherArea" hidden style="position:fixed;inset:0;background:#fff;z-index:200;overflow:auto;padding:24px">
+  <pre id="vText" style="font:18px/1.9 -apple-system,sans-serif;white-space:pre-wrap"></pre>
+  <div class="actions no-print" style="margin-top:16px">
+    <button class="btn primary" id="vPrint" type="button">🖨️ Imprimer / PDF</button>
+    <button class="btn success" id="vWa" type="button">WhatsApp</button>
+    <button class="btn secondary" id="vClose" type="button">Fermer</button>
+  </div>
+</div>
+<div id="negArea" hidden style="position:fixed;inset:0;background:#fff;z-index:210;overflow:auto;padding:24px">
+  <h2>💬 Négociation</h2>
+  <pre id="negText" style="font:17px/1.8 -apple-system,sans-serif;white-space:pre-wrap"></pre>
+  <div class="actions" style="margin-top:14px">
+    <button class="btn success" id="negAccept" type="button">✅ Accepter son prix</button>
+    <button class="btn primary" id="negMid" type="button">🤝 Proposer le milieu</button>
+    <button class="btn secondary" id="negCounter" type="button">↔️ Autre contre-offre</button>
+    <button class="btn secondary" id="negKeep" type="button">Maintenir mon prix</button>
+    <button class="btn secondary" id="negClose" type="button">Fermer</button>
+  </div>
+</div>
+<footer class="no-print">FACTURIX · Une solution pour les entrepreneurs. <span class="note">v026</span>
+  <div><button class="btn secondary" id="installBtn" type="button" hidden>📲 Installer l'application</button>
+  <p class="note" id="installHint" hidden>Pour installer : touche Partager, puis « Sur l'écran d'accueil ».</p></div></footer>
+
+<!-- Mentor IA : instructions par profil, puis le moteur, puis l'application -->
+<script src="js/mentor-ia/prompt-commercant.js?v=026"></script>
+<script src="js/mentor-ia/prompt-prestataire.js?v=026"></script>
+<script src="js/mentor-ia/core-ia.js?v=026"></script>
+<script src="js/app.js?v=026"></script>
+</body>
+</html>
