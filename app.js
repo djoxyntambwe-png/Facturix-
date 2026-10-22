@@ -1,22 +1,27 @@
+import { createClient } from 'https://jsdelivr.net'
+
 window.addEventListener('error', e => {
-  if (e.filename && /app\.js|core-ia|prompt-/.test(e.filename)) { const b = document.getElementById('errBar'); if (b) b.hidden = false; console.error(e.message); }
+    if (e.filename && /app\.js|core-ia|prompt-/.test(e.filename)) {
+    }
 });
+
 (() => {
-'use strict';
-const $ = id => document.getElementById(id);
-const fmt = n => (Number(n) || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const setStatus = (id, msg, type) => { const el = $(id); el.textContent = msg; el.className = 'status' + (type ? ' ' + type : ''); };
+    'use strict';
+    const $ = id => document.getElementById(id);
+    const fmt = n => (Number(n) || 0).toLocaleString('fr');
+    const setStatus = (id, msg, type) => { /* ... */ };
+    const SUPABASE_URL = 'https://gravdcorborgssicqkso.supabase.co'; 
+    const SUPABASE_ANON_KEY = 'sb_publishable_vIZcbN1B5TA-vUqiC8Af0g_8a3bl5CE';
+    
+    // Tu crées et exportes le client de manière modulaire
+    const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    window._supabase = _supabase; // Cette ligne permet de ne pas casser le reste de ton code qui utilise déjà "window._supabase" ou "_supabase"
 
-const SUPABASE_URL = 'https://gravdcorborgssicqkso.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_vIZcbN1B5TA-vUqiC8Af0g_8a3bl5CE';
-const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-let currentUser = null;
-let WID = null, ROLE = 'owner', LOCKED = false;
-let companyData = null;
-let catalogItems = [];
-let isSignup = false;
-
+    let currentUser = null;
+    let WID = null, ROLE = 'owner', LOCKED = false;
+    let companyData = null;
+    let catalogItems = [];
+    let isSignup = false;z
 function saveDraft() {
   const draft = {
     number: $('invNumber').value,
