@@ -1,5 +1,4 @@
 import { createClient } from 'https://jsdelivr.net'
-
 window.addEventListener('error', e => {
     if (e.filename && /app\.js|core-ia|prompt-/.test(e.filename)) {
     }
@@ -21,7 +20,7 @@ window.addEventListener('error', e => {
     let WID = null, ROLE = 'owner', LOCKED = false;
     let companyData = null;
     let catalogItems = [];
-    let isSignup = false;z
+    let isSignup = false;
 function saveDraft() {
   const draft = {
     number: $('invNumber').value,
