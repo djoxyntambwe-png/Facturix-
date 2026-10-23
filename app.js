@@ -316,7 +316,7 @@ $('productForm').addEventListener('submit', async e => {
 function docTitle() {
   if (profile.business_type === 'prestataire') $('docType').value = 'devis';
   const q = $('docType').value === 'devis';
-  $('invTitle').textContent = q ? '🧾 Créer un devis' : '🧾 Créer une facture';
+  $('invTitle').textContent = q ? ' Créer un devis' : ' Créer une facture';
   $('saveInvoiceBtn').textContent = q ? 'Enregistrer le devis' : 'Enregistrer la facture';
   $('paidField').hidden = q;
   $('newInvoiceBtn').textContent = q ? 'Nouveau devis' : 'Nouvelle facture';
@@ -597,7 +597,7 @@ async function loadHistory() {
     meta.className = 'note';
     const late = inv.doc_type !== 'devis' && inv.status !== 'payée' ? Math.floor((Date.now() - new Date(inv.created_at)) / 86400000) : 0;
     const exp = inv.doc_type === 'devis' && inv.valid_days && ['brouillon', 'envoyé', 'negociation'].includes(inv.status) && (Date.now() - new Date(inv.created_at)) / 86400000 > inv.valid_days;
-    meta.textContent = (exp ? '⌛ expiré · ' : '') + (late >= 7 ? '⏰ ' + late + ' j · ' : '') + (inv.doc_type === 'devis' ? 'Devis' : 'Facture') + ' · ' + (inv.status === 'negociation' ? '💬 négociation' : isPrest() && inv.status === 'approuvé' ? 'en cours' : (inv.status || '')) + (inv.status === 'partielle' ? ' (reste ' + fmt(inv.total_amount - (inv.paid_amount || 0)) + ')' : '') + ' · ' + new Date(inv.created_at).toLocaleDateString('fr-FR') + ' · ' + fmt(inv.total_amount) + ' ' + (inv.currency || 'CDF');
+    meta.textContent = (exp ? ' expiré · ' : '') + (late >= 7 ? '⏰ ' + late + ' j · ' : '') + (inv.doc_type === 'devis' ? 'Devis' : 'Facture') + ' · ' + (inv.status === 'negociation' ? '💬 négociation' : isPrest() && inv.status === 'approuvé' ? 'en cours' : (inv.status || '')) + (inv.status === 'partielle' ? ' (reste ' + fmt(inv.total_amount - (inv.paid_amount || 0)) + ')' : '') + ' · ' + new Date(inv.created_at).toLocaleDateString('fr-FR') + ' · ' + fmt(inv.total_amount) + ' ' + (inv.currency || 'CDF');
     info.append(strong, meta);
     const view = document.createElement('button');
     view.type = 'button'; view.className = 'btn secondary'; view.textContent = 'Voir / Imprimer';
@@ -806,13 +806,13 @@ function applyProfile() {
   document.querySelector('.nav button').textContent = prest ? 'Nouveau devis' : 'Nouvelle facture';
   document.querySelector('.nav button[data-page="historique"]').textContent = prest ? 'Mes devis' : 'Mes factures';
   document.querySelectorAll('.salesLbl').forEach(e => e.textContent = prest ? "Main-d'œuvre reçue" : 'Total Ventes');
-  $('cashTitle').textContent = prest ? "💰 Main-d'œuvre : reçu / à recevoir" : '💰 Encaissé / À encaisser';
+  $('cashTitle').textContent = prest ? " Main-d'œuvre : reçu / à recevoir" : ' Encaissé / À encaisser';
   if (prest) $('histFilter').innerHTML = '<option value="">Tout</option><option value="attente">En attente de réponse</option><option value="cours">En cours</option><option value="fini">Terminés</option>';
   $('inviteRole').innerHTML = prest ? '<option value="aide">Aide / personnel</option>' : '<option value="vendeur">Vendeur</option><option value="associe">Associé</option>';
   $('teamHelp').textContent = prest ? "Crée un code pour une aide (personnel). Elle crée son compte avec ce code, puis ne voit que ses propres devis : jamais tes revenus ni tes dépenses." : $('teamHelp').textContent;
   $('proListCom').hidden = prest; $('proListPrest').hidden = !prest;
-  $('planBar').textContent = pro ? ('Plan PRO ✅' + (until ? ` · jusqu'au ${until.toLocaleDateString('fr-FR')}` : '') + (days !== null && days <= 5 ? ` ⚠️ fin dans ${days} jour(s)` : '')) : (prest ? `Plan Gratuit · ${LIMITS.devis} devis par mois` : `Plan Gratuit · ${LIMITS.facture} factures par mois`);
-  if (ROLE !== 'owner') $('planBar').textContent = `👥 ${ROLE === 'vendeur' ? 'Vendeur' : ROLE === 'aide' ? 'Aide' : 'Associé'} · ${companyData?.name || 'ton entreprise'}`;
+  $('planBar').textContent = pro ? ('Plan PRO ✅' + (until ? ` · jusqu'au ${until.toLocaleDateString('fr-FR')}` : '') + (days !== null && days <= 5 ? `  fin dans ${days} jour(s)` : '')) : (prest ? `Plan Gratuit · ${LIMITS.devis} devis par mois` : `Plan Gratuit · ${LIMITS.facture} factures par mois`);
+  if (ROLE !== 'owner') $('planBar').textContent = ` ${ROLE === 'vendeur' ? 'Vendeur' : ROLE === 'aide' ? 'Aide' : 'Associé'} · ${companyData?.name || 'ton entreprise'}`;
   $('proBtn').hidden = ROLE !== 'owner' || (pro && !(days !== null && days <= 7));
   $('proBtn').textContent = pro ? '🔄 Renouveler' : '⭐ Passer PRO';
   const hide = ROLE === 'aide' ? ['facture', 'historique', 'entreprise', 'catalogue', 'depenses', 'dashboard', 'equipe', 'mentor', 'pro'] : ROLE === 'vendeur' ? ['entreprise', 'catalogue', 'depenses', 'dashboard', 'equipe', 'mentor'] : ROLE === 'associe' ? ['equipe'] : [];
@@ -943,11 +943,11 @@ async function showPublic(token) {
   const d = data.doc, offers = data.offers || [], lastO = offers[offers.length - 1], open = d.doc_type === 'devis' && !['approuvé', 'terminé'].includes(d.status);
   if (offers.length) {
     const t = document.createElement('div'); t.className = 'note no-print'; t.style.cssText = 'white-space:pre-wrap;margin-top:12px';
-    t.textContent = '💬 Négociation :\n' + offers.map(o => `${o.side === 'client' ? 'Toi' : 'Prestataire'} : ${fmt(o.amount)} ${d.currency}${o.message ? ' — ' + o.message : ''}`).join('\n');
+    t.textContent = ' Négociation :\n' + offers.map(o => `${o.side === 'client' ? 'Toi' : 'Prestataire'} : ${fmt(o.amount)} ${d.currency}${o.message ? ' — ' + o.message : ''}`).join('\n');
     $('page-facture').appendChild(t);
   }
   if (open) {
-    if (lastO && lastO.side === 'prestataire') bar.append(mk(`✅ J'accepte ${fmt(lastO.amount)} ${d.currency}`, 'success', async () => {
+    if (lastO && lastO.side === 'prestataire') bar.append(mk(` J'accepte ${fmt(lastO.amount)} ${d.currency}`, 'success', async () => {
       const { error } = await _supabase.rpc('client_accept_offer', { p_token: token });
       alert(error ? 'Erreur : ' + error.message : "Merci ! C'est accepté, le prestataire est informé.");
       if (!error) location.reload();
@@ -956,7 +956,7 @@ async function showPublic(token) {
       const { error } = await _supabase.rpc('approve_public_quote', { p_token: token });
       alert(error ? 'Erreur : ' + error.message : 'Merci ! Le prestataire est informé.');
     }));
-    bar.append(mk('💬 Je propose un autre prix', 'secondary', async () => {
+    bar.append(mk(' Je propose un autre prix', 'secondary', async () => {
       const base = Number(d.labor_orig ?? d.labor_amount) || 0, idea = Math.round(base * 0.9 / 100) * 100;
       const a = parseFloat(prompt(`Main-d'œuvre demandée : ${fmt(base)} ${d.currency}.\nTon prix proposé pour la main-d'œuvre (idée : -10 %) :`, idea));
       if (!(a > 0)) return;
@@ -1130,7 +1130,7 @@ function syncPayUI() {
 }
 async function loadMissions() {
   const helper = isHelper(), owner = ROLE === 'owner';
-  $('misTitle').textContent = helper ? (isPrest() ? '📋 Mes missions' : '📋 Ma journée') : (isPrest() ? '📋 Missions' : '📋 Journées de vente');
+  $('misTitle').textContent = helper ? (isPrest() ? ' Mes missions' : ' Ma journée') : (isPrest() ? ' Missions' : ' Journées de vente');
   $('misNew').hidden = !owner; $('misReport').hidden = !helper; $('repBox').hidden = !owner;
   if (owner) {
     $('misName').placeholder = isPrest() ? 'Ex. Peinture chez Don' : 'Ex. Vente du samedi';
@@ -1158,13 +1158,13 @@ async function loadMissions() {
     if (helper) {
       if (m.status === 'envoyee') acts.append(mk('▶️ Commencer', 'success', () => misAct(m.id, 'start')));
       if (['envoyee', 'en_cours'].includes(m.status)) acts.append(mk('🏁 Terminer', 'primary', () => misAct(m.id, 'finish')));
-      if (m.status === 'payee') acts.append(mk('💵 Paiement reçu', 'success', () => misAct(m.id, 'receive')));
+      if (m.status === 'payee') acts.append(mk(' Paiement reçu', 'success', () => misAct(m.id, 'receive')));
     } else {
-      if (m.status === 'terminee') acts.append(mk('✅ Vérifier', 'success', () => misAct(m.id, 'verify')));
-      if (m.status === 'verifiee') acts.append(mk('💵 Marquer payé', 'primary', () => misAct(m.id, 'pay')));
+      if (m.status === 'terminee') acts.append(mk('Vérifier', 'success', () => misAct(m.id, 'verify')));
+      if (m.status === 'verifiee') acts.append(mk('Marquer payé', 'primary', () => misAct(m.id, 'pay')));
       if (m.status === 'envoyee') acts.append(mk('Supprimer', 'danger', async () => { await _supabase.from('missions').delete().eq('id', m.id); loadMissions(); }));
     }
-    if (m.status === 'recue') acts.append(mk('🧾 Bon de paiement', 'secondary', () => showVoucher(m)));
+    if (m.status === 'recue') acts.append(mk(' Bon de paiement', 'secondary', () => showVoucher(m)));
     box.append(sum, body, acts); list.appendChild(box);
   });
   const vs = (data || []).filter(m => m.status === 'recue'), vl = $('vouchList');
