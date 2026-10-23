@@ -60,7 +60,7 @@
   </section>
 
   <section id="resetView" class="card no-print" hidden>
-    <h2>🔑 Nouveau mot de passe</h2>
+    <h2>Nouveau mot de passe</h2>
     <form id="resetForm">
       <div class="field"><label for="newPw">Nouveau mot de passe</label><input id="newPw" type="password" minlength="8" required autocomplete="new-password" placeholder="8 caractères minimum"></div>
       <div class="field"><label for="newPw2">Répète-le</label><input id="newPw2" type="password" minlength="8" required autocomplete="new-password"></div>
@@ -87,10 +87,10 @@
     </div>
         <nav class="nav no-print">
       <button type="button" class="active" data-page="facture">Nouvelle facture</button>
-      <button type="button" data-page="dashboard">📊 Tableau de bord</button> <!-- Ajouté ici ! -->
-      <button type="button" data-page="depenses">💸 Dépenses</button>
-      <button type="button" data-page="mentor">🧑‍🏫 Mentor</button>
-      <button type="button" data-page="missions">📋 Missions</button>
+      <button type="button" data-page="dashboard">Tableau de bord</button> <!-- Ajouté ici ! -->
+      <button type="button" data-page="depenses">Dépenses</button>
+      <button type="button" data-page="mentor"> Mentor</button>
+      <button type="button" data-page="missions">Missions</button>
       <button type="button" data-page="equipe">👥 Équipe</button>
       <button type="button" data-page="entreprise">Mon entreprise</button>
       <button type="button" data-page="catalogue">Catalogue</button>
@@ -147,7 +147,7 @@
     <!-- NOUVELLE FACTURE -->
     <section class="card" id="page-facture">
       <div class="no-print">
-        <h2 id="invTitle">🧾 Créer une facture</h2>
+        <h2 id="invTitle">Créer une facture</h2>
         <form id="invoiceForm">
           <div class="grid">
             <div class="field"><label for="invNumber" id="invNumLabel">Numéro de facture *</label><input id="invNumber" required placeholder="FAC-2026-001"></div>
@@ -242,7 +242,7 @@
 
     <!-- HISTORIQUE -->
     <section class="card no-print" id="page-historique" hidden>
-      <h2>📋 Mes factures</h2>
+      <h2> Mes factures</h2>
       <button class="btn secondary" id="csvBtn" type="button" style="margin-bottom:10px">⬇️ Exporter vers Excel (PRO)</button>
       <div class="grid"><div class="field"><input id="histSearch" placeholder="🔎 Client ou numéro"></div>
       <div class="field"><select id="histFilter"><option value="">Tout</option><option value="impayee">À encaisser</option><option value="payee">Payées</option><option value="devis">Devis</option><option value="facture">Factures</option></select></div></div>
@@ -251,7 +251,7 @@
 
     <!-- MISSIONS -->
     <section class="card no-print" id="page-missions" hidden>
-      <h2 id="misTitle">📋 Missions</h2>
+      <h2 id="misTitle">Missions</h2>
       <div id="misNew" hidden>
         <div class="field"><label for="misAssignee">Pour qui ?</label><select id="misAssignee"></select></div>
         <div class="field"><label for="misName">Titre *</label><input id="misName" maxlength="120"></div>
@@ -266,9 +266,9 @@
         <p id="misStatus" class="status"></p>
       </div>
       <div id="misList" class="catalog-list"></div>
-      <div id="vouchBox" hidden style="margin-top:18px"><h3>🧾 Bons de paiement (gardés 6 mois)</h3><div id="vouchList" class="catalog-list"></div></div>
+      <div id="vouchBox" hidden style="margin-top:18px"><h3> Bons de paiement (gardés 6 mois)</h3><div id="vouchList" class="catalog-list"></div></div>
       <div id="misReport" hidden style="margin-top:18px">
-        <h3>📝 Envoyer un rapport</h3>
+        <h3>Envoyer un rapport</h3>
         <textarea id="repText" maxlength="800" placeholder="Résume ton travail, les ventes, les problèmes..."></textarea>
         <button class="btn secondary" id="repSend" type="button" style="margin-top:8px">Envoyer le rapport (WhatsApp)</button>
       </div>
@@ -277,7 +277,7 @@
 
     <!-- MENTOR -->
     <section class="card no-print" id="page-mentor" hidden>
-      <h2>🧑‍🏫 Mentor FACTURIX</h2>
+      <h2>Mentor FACTURIX</h2>
       <p class="note" id="mentorLeft"></p>
       <div id="chatBox" style="min-height:45vh;max-height:60vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:4px 0"></div>
       <div id="chatChips" class="actions" style="margin:10px 0"></div>
@@ -299,7 +299,7 @@
 
     <!-- DÉPENSES -->
     <section class="card no-print" id="page-depenses" hidden>
-      <h2>💸 Mes dépenses</h2>
+      <h2> Mes dépenses</h2>
       <form id="expenseForm">
         <div class="grid">
           <div class="field"><label for="expDate">Date *</label><input id="expDate" type="date" required></div>
@@ -370,7 +370,7 @@
         <p class="note" id="goalText"></p><button class="btn secondary" id="goalBtn" type="button">Définir mon objectif</button>
       </div>
       <div class="card" style="margin:15px 0 0">
-        <h3 style="margin-top:0">🧑‍🏫 Mentor FACTURIX</h3>
+        <h3 style="margin-top:0"> Mentor FACTURIX</h3>
         <p class="note">Pose tes questions dans un écran dédié, plus grand.</p>
         <button class="btn primary" id="mentorOpen" type="button">Ouvrir le Mentor</button>
       </div>
@@ -379,7 +379,7 @@
         <svg id="profitChart" viewBox="0 0 300 120" style="width:100%"></svg>
         <h3>🏆 Meilleurs clients (6 mois)</h3><div id="topClients" class="note"></div>
         <h3 id="topItemsTitle">📦 Plus vendus (6 mois)</h3><div id="topItems" class="note"></div>
-        <div id="quoteBox"><h3>📨 Mes devis</h3><div id="quoteStats" class="note"></div></div>
+        <div id="quoteBox"><h3> Mes devis</h3><div id="quoteStats" class="note"></div></div>
       </div>
       <p class="note" id="proLock" style="text-align:center;margin-top:12px" hidden>🔒 Graphique et meilleurs clients : plan PRO</p>
       <p class="note" style="margin-top: 15px; text-align: center; font-weight: 650;" id="dashCount">0 facture(s) sur la période.</p>
